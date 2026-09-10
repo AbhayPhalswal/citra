@@ -19,7 +19,7 @@
   <img src="docs/switchboard.jpg" alt="A NodeMCU wired into a real switchboard" width="760">
 </p>
 <p align="center">
-  <i>This is the whole idea. A ₹200 NodeMCU behind an ordinary switchboard.<br>
+  <i>This is the whole idea. About ₹250 of parts behind an ordinary switchboard.<br>
   Leave the wall switch on, and that light now answers to your voice,<br>
   your phone, or a schedule.</i>
 </p>
@@ -34,9 +34,10 @@
   "Citra, turn on the warm light at 6am" → scheduled
 ```
 
-Not smart bulbs. **Your existing switchboards**, rewired with relay
-boards and a ~₹200 NodeMCU behind each one. About **₹1,200 per
-switchboard** in parts, and nothing to pay anyone monthly.
+Not smart bulbs. **Your existing switchboards**, rewired with a NodeMCU
+and a relay board behind each one — about **₹250–300 a switchboard**
+in parts. The AC's IR blaster was another ₹200. Nothing to pay anyone
+monthly.
 
 ---
 
@@ -66,7 +67,7 @@ power, temperature, mode.
   <img src="docs/ac-ir.jpg" alt="The IR blaster that drives the air conditioner" width="330">
 </p>
 <p align="center">
-  <i>The AC controller: an ESP8266 and an IR LED. Not pretty. Works.</i>
+  <i>The AC controller: an ESP8266 and an IR LED, about ₹200 the pair.<br>Not pretty. Works.</i>
 </p>
 
 **It works with the internet down.** A light or AC command never leaves

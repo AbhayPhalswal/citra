@@ -10,8 +10,8 @@ speech-to-text and text-to-speech all run **on your machine**.
 
 ## 🏠 It runs your actual flat
 
-Not smart bulbs — **your existing switchboards**, rewired with relay
-boards and a ₹200 NodeMCU behind each one.
+Not smart bulbs — **your existing switchboards**, rewired with a NodeMCU
+and a relay board behind each one. About ₹250–300 a switchboard.
 
 - `"Citra, turn on the lights"` → a physical relay clicks
 - Per-room control across 11 boards: bedrooms, hall, kitchen, bathroom
@@ -89,8 +89,9 @@ are physical: mains-powered relay boards behind real switches, IR
 timing, an ESP8266 that handles one request at a time, DHCP conflicts,
 audio device routing on Windows.
 
-It costs about **₹1,200 per switchboard** in parts, runs offline for the
-things that matter, and pays nobody a monthly fee.
+It costs about **₹250–300 per switchboard** in parts, plus ₹200 for the
+IR blaster that drives the AC. It runs offline for the things that
+matter, and pays nobody a monthly fee.
 
 Built by a first-year Data Science student to automate his own flat,
 then his neighbours'.
