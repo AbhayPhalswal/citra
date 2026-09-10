@@ -1,0 +1,17 @@
+# Speech - all local
+openwakeword
+faster-whisper
+piper-tts
+sounddevice
+soundcard
+numpy
+
+# Hardware + web
+requests
+aiohttp
+
+# Windows automation
+pyautogui
+comtypes
+pycaw
+Pillow

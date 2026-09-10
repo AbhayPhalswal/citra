@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Citra Control</title>
+<style>
+  :root {
+    --accent: #e0a856;
+    --accent-soft: rgba(224, 168, 86, 0.13);
+    --accent-line: rgba(224, 168, 86, 0.16);
+    --text-primary: rgba(245, 238, 228, 0.88);
+    --text-secondary: rgba(245, 238, 228, 0.45);
+    --text-faint: rgba(245, 238, 228, 0.24);
+    --surface: #0c1014;
+    --surface-raised: #12171c;
+    --border: rgba(245, 238, 228, 0.08);
+    --danger: #d98b8b;
+    --good: #8fbf9f;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #07090b;
+    color: var(--text-primary);
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    background:
+      radial-gradient(circle at 50% -10%, rgba(224, 168, 86, 0.08), transparent 55%),
+      #07090b;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  header .glyph {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    border: 1px solid var(--accent-line);
+    background: var(--accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  header .glyph span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px 2px var(--accent-soft);
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin: 0 0 4px;
+  }
+
+  header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .open-ui {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    border-radius: 14px;
+    border: 1px solid var(--accent-line);
+    background: linear-gradient(180deg, var(--accent-soft), rgba(224, 168, 86, 0.05));
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: border-color 0.25s var(--ease), transform 0.15s var(--ease);
+  }
+
+  .open-ui:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .open-ui:active { transform: translateY(0); }
+  .open-ui .arrow { font-weight: 400; opacity: 0.8; }
+
+  .quick-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .quick-row button {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: border-color 0.2s var(--ease), color 0.2s var(--ease), background 0.2s var(--ease);
+  }
+
+  .quick-row button:hover {
+    color: var(--text-primary);
+    border-color: var(--accent-line);
+    background: var(--surface-raised);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 18px 16px;
+    margin-bottom: 14px;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .service-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    transition: background 0.4s var(--ease), box-shadow 0.4s var(--ease);
+  }
+
+  .status-dot.online {
+    background: var(--good);
+    box-shadow: 0 0 8px 1px rgba(143, 191, 159, 0.45);
+  }
+
+  .status-dot.offline {
+    background: var(--danger);
+    box-shadow: 0 0 8px 1px rgba(217, 139, 139, 0.35);
+  }
+
+  /* Starting: amber and pulsing, so "still loading" is never mistaken for
+     "ready" at a glance — the exact confusion this panel exists to fix. */
+  .status-dot.starting {
+    background: var(--accent);
+    box-shadow: 0 0 8px 1px var(--accent-soft);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .status-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .status-text .uptime {
+    display: block;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stage-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(245, 238, 228, 0.07);
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.6s var(--ease), background 0.4s var(--ease);
+  }
+
+  .progress-fill.done { background: var(--good); }
+
+  .card.is-starting { border-color: var(--accent-line); }
+
+  .error-line {
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(217, 139, 139, 0.08);
+    border: 1px solid rgba(217, 139, 139, 0.25);
+    color: var(--danger);
+    font-size: 11.5px;
+    font-family: ui-monospace, Consolas, monospace;
+    word-break: break-word;
+    display: none;
+  }
+
+  .log-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 10px;
+    color: var(--text-faint);
+    font-size: 11.5px;
+    cursor: pointer;
+    transition: color 0.2s var(--ease);
+  }
+
+  .log-toggle:hover { color: var(--accent); }
+
+  .log-view {
+    display: none;
+    max-height: 190px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+    padding: 10px 11px;
+    border-radius: 9px;
+    background: #05070a;
+    border: 1px solid var(--border);
+    font-family: ui-monospace, Consolas, "Courier New", monospace;
+    font-size: 10.5px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .log-view.open { display: block; }
+  .log-view::-webkit-scrollbar { width: 6px; }
+  .log-view::-webkit-scrollbar-thumb {
+    background: rgba(245, 238, 228, 0.12);
+    border-radius: 3px;
+  }
+  .log-view .err { color: var(--danger); }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-row button {
+    flex: 1;
+    padding: 9px 0;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s var(--ease), transform 0.1s var(--ease), opacity 0.2s var(--ease);
+  }
+
+  .btn-row button:hover { border-color: var(--accent-line); }
+  .btn-row button:active { transform: scale(0.97); }
+  .btn-row button:disabled { opacity: 0.35; cursor: default; transform: none; }
+
+  .btn-row button.stop:hover { border-color: rgba(217, 139, 139, 0.4); color: var(--danger); }
+
+  .toast {
+    margin-top: 4px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    min-height: 18px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="panel">
+  <header>
+    <div class="glyph"><span></span></div>
+    <h1>Citra Control</h1>
+    <p>Start, stop, and restart Citra from here</p>
+  </header>
+
+  <a class="open-ui" id="openUi" href="#" target="_blank" rel="noopener">
+    <span>Open Citra UI</span>
+    <span class="arrow">&#8599;</span>
+  </a>
+
+  <div class="quick-row">
+    <button data-service="all" data-action="start">Start All</button>
+    <button data-service="all" data-action="restart">Restart All</button>
+    <button data-service="all" data-action="stop">Stop All</button>
+  </div>
+
+  <div class="card" data-card="voice_assistant">
+    <div class="card-top">
+      <div class="service-name"><span class="status-dot"></span>Voice Assistant</div>
+      <div class="status-text">&mdash;</div>
+    </div>
+    <div class="stage-row">
+      <span class="stage-label">&mdash;</span>
+      <span class="progress-track"><span class="progress-fill"></span></span>
+    </div>
+    <div class="error-line"></div>
+    <button class="log-toggle">Show log</button>
+    <div class="log-view"></div>
+    <div class="btn-row">
+      <button data-service="voice_assistant" data-action="start">Start</button>
+      <button data-service="voice_assistant" data-action="restart">Restart</button>
+      <button class="stop" data-service="voice_assistant" data-action="stop">Stop</button>
+    </div>
+  </div>
+
+  <div class="card" data-card="ui_server">
+    <div class="card-top">
+      <div class="service-name"><span class="status-dot"></span>UI Server</div>
+      <div class="status-text">&mdash;</div>
+    </div>
+    <div class="stage-row">
+      <span class="stage-label">&mdash;</span>
+      <span class="progress-track"><span class="progress-fill"></span></span>
+    </div>
+    <div class="error-line"></div>
+    <button class="log-toggle">Show log</button>
+    <div class="log-view"></div>
+    <div class="btn-row">
+      <button data-service="ui_server" data-action="start">Start</button>
+      <button data-service="ui_server" data-action="restart">Restart</button>
+      <button class="stop" data-service="ui_server" data-action="stop">Stop</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const SERVICES = ["voice_assistant", "ui_server"];
+const toastEl = document.getElementById("toast");
+const openUiEl = document.getElementById("openUi");
+let toastTimer = null;
+
+function showToast(text, isError) {
+  toastEl.textContent = text;
+  toastEl.classList.toggle("error", !!isError);
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 3500);
+}
+
+const STATE_TEXT = { ready: "Ready", starting: "Starting…", stopped: "Stopped" };
+
+function formatUptime(seconds) {
+  if (seconds === null || seconds === undefined) return "";
+  if (seconds < 60) return `up ${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  if (m < 60) return `up ${m}m ${seconds % 60}s`;
+  return `up ${Math.floor(m / 60)}h ${m % 60}m`;
+}
+
+function applyStatus(data) {
+  if (data.ui_url) openUiEl.href = data.ui_url;
+  for (const key of SERVICES) {
+    const info = data[key];
+    if (!info) continue;
+    const card = document.querySelector(`[data-card="${key}"]`);
+    const dot = card.querySelector(".status-dot");
+    const text = card.querySelector(".status-text");
+    const stage = card.querySelector(".stage-label");
+    const fill = card.querySelector(".progress-fill");
+    const errEl = card.querySelector(".error-line");
+
+    dot.classList.toggle("online", info.state === "ready");
+    dot.classList.toggle("starting", info.state === "starting");
+    dot.classList.toggle("offline", info.state === "stopped");
+    card.classList.toggle("is-starting", info.state === "starting");
+
+    text.innerHTML = `${STATE_TEXT[info.state] || "—"}<span class="uptime">${formatUptime(info.uptime)}</span>`;
+    stage.textContent = info.stage;
+    fill.style.width = `${info.progress}%`;
+    fill.classList.toggle("done", info.state === "ready");
+
+    if (info.error) {
+      errEl.textContent = info.error;
+      errEl.style.display = "block";
+    } else {
+      errEl.style.display = "none";
+    }
+  }
+}
+
+async function refreshStatus() {
+  try {
+    const res = await fetch("/api/status");
+    applyStatus(await res.json());
+  } catch (e) {
+    // Server briefly unreachable (e.g. mid-restart) -- next poll retries.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Live log tails. Only polled for a card whose log is actually OPEN -- an
+// always-on poll of both would re-read two files every couple of seconds to
+// render something nobody is looking at.
+// ---------------------------------------------------------------------------
+const openLogs = new Set();
+
+async function refreshLog(key) {
+  const view = document.querySelector(`[data-card="${key}"] .log-view`);
+  try {
+    const res = await fetch(`/api/logs?service=${key}`);
+    const data = await res.json();
+    if (!data.ok) return;
+    // Pinned to the bottom unless the user has scrolled up to read
+    // something -- yanking the view back down mid-read would make the log
+    // useless exactly when it matters.
+    const pinned = view.scrollHeight - view.scrollTop - view.clientHeight < 40;
+    view.innerHTML = data.lines
+      .map((line) => {
+        const safe = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return /\[ERROR\]|Traceback/.test(line) ? `<span class="err">${safe}</span>` : safe;
+      })
+      .join("\n");
+    if (pinned) view.scrollTop = view.scrollHeight;
+  } catch (e) {
+    // Same as status: a mid-restart blip just retries on the next tick.
+  }
+}
+
+document.querySelectorAll(".log-toggle").forEach((btn) => {
+  const card = btn.closest(".card");
+  const key = card.dataset.card;
+  const view = card.querySelector(".log-view");
+  btn.addEventListener("click", () => {
+    const nowOpen = !view.classList.contains("open");
+    view.classList.toggle("open", nowOpen);
+    btn.textContent = nowOpen ? "Hide log" : "Show log";
+    if (nowOpen) {
+      openLogs.add(key);
+      refreshLog(key);
+    } else {
+      openLogs.delete(key);
+    }
+  });
+});
+
+setInterval(() => openLogs.forEach(refreshLog), 2000);
+
+async function runAction(service, action) {
+  const targets = service === "all" ? SERVICES : [service];
+  showToast(`Working on it…`);
+  for (const svc of targets) {
+    try {
+      const res = await fetch("/api/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service: svc, action }),
+      });
+      const data = await res.json();
+      showToast(data.message, !data.ok);
+    } catch (e) {
+      showToast("Couldn't reach the control panel server.", true);
+    }
+  }
+  refreshStatus();
+}
+
+document.querySelectorAll("button[data-service]").forEach((btn) => {
+  btn.addEventListener("click", () => runAction(btn.dataset.service, btn.dataset.action));
+});
+
+refreshStatus();
+setInterval(refreshStatus, 3000);
+</script>
+</body>
+</html>

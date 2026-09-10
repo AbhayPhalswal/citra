@@ -1,0 +1,23 @@
+# --- personal / secret: never commit these -----------------------------
+citra_contacts.json          # real phone numbers
+citra_api_token.txt          # dashboard API token
+citra_cert.pem
+citra_key.pem
+citra_muted.json
+citra_model_preference.json
+call_recordings/
+generated_code/
+my_voice_positive/
+my_voice_negative/
+*.log
+
+# --- environment -------------------------------------------------------
+jarvis_venv/
+__pycache__/
+*.pyc
+*.tmp
+.claude/settings.local.json
+
+# --- large model files (download them, see README) ---------------------
+*.onnx
+!hey_citra.onnx

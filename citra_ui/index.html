@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Citra</title>
+
+<!-- INSTALLABLE AS AN APP, on purpose. Not every resident wants to talk to
+     a voice assistant, and some will actively prefer not to — they still
+     need a way to switch the lights on. "Add to Home Screen" turns this
+     dashboard into a normal-looking app icon with no browser chrome, which
+     is the Android answer to what iOS Shortcuts provides, and works on iOS
+     too. display:standalone in the manifest is what removes the address
+     bar; apple-mobile-web-app-* below is the older iOS equivalent, which
+     Safari still honours instead of the manifest for this. -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#07090b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Citra">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+
+<link rel="stylesheet" href="style.css">
+<!-- Vendored locally (citra_ui/vendor/three/) rather than pulled from a CDN:
+     this page has to render on whatever WiFi a room happens to have, and a
+     ~1.3MB fetch from an external host on every load is a real failure
+     mode on a weak or internet-less LAN -- the page would sit on a black
+     screen indefinitely with no error shown. Served by the same local
+     server as everything else, so page load never leaves the LAN. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.js",
+    "three/addons/": "./vendor/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+  <canvas id="core-canvas"></canvas>
+
+  <div class="status-row">
+    <div id="status-dot" class="status-dot offline" title="UI server connection"></div>
+    <div id="state-label" class="state-label">IDLE</div>
+  </div>
+
+  <div id="caption-wrap" class="caption-wrap">
+    <div id="transcript-line" class="transcript-line"></div>
+    <div id="caption-line" class="caption-line"></div>
+  </div>
+
+  <!-- Talk-to-Citra button: uses THIS device's microphone (a phone's, most
+       of the time) rather than the room mic — tap to start recording, tap
+       again to send. Only appears functional on a secure context
+       (https:// or localhost); see app.js for what happens otherwise. -->
+  <button id="mic-fab" class="mic-fab" title="Talk to Citra">
+    <svg viewBox="0 0 24 24" width="22" height="22">
+      <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
+      <path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <!-- Floating button that opens the room-control drawer -->
+  <button id="control-fab" class="control-fab" title="Room controls">
+    <svg viewBox="0 0 24 24" width="22" height="22">
+      <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <!-- Type-to-Citra. Same brain as the voice path, but typed: for a
+       lecture, a sleeping house, or a word Whisper keeps mangling. -->
+  <button id="chat-fab" class="chat-fab" title="Type to Citra">
+    <svg viewBox="0 0 24 24" width="20" height="20">
+      <path d="M4 5h16v11H8l-4 4V5z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- Backdrop -- click it to close the drawer, same as clicking outside -->
+  <div id="drawer-backdrop" class="drawer-backdrop"></div>
+
+  <div id="control-drawer" class="control-drawer">
+    <button id="drawer-close" class="drawer-close" title="Close">
+      <svg viewBox="0 0 24 24" width="18" height="18">
+        <path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <!-- ============================= LIGHTS PANEL ============================= -->
+    <div class="panel lights-panel">
+      <div class="panel-title">Lights</div>
+
+      <div class="brightness-row">
+        <button class="ghost-btn" data-action="brightness_min">MIN</button>
+        <button class="ghost-btn" data-action="brightness_down">&minus;</button>
+        <button class="ghost-btn" data-action="brightness_up">&plus;</button>
+        <button class="ghost-btn" data-action="brightness_max">MAX</button>
+      </div>
+
+      <div class="relay-list" id="relay-list">
+        <!-- 4 relay sliders injected by app.js -->
+      </div>
+    </div>
+
+    <!-- ============================== AC REMOTE ================================ -->
+    <div class="panel ac-panel">
+      <div class="panel-title">Climate</div>
+
+      <div class="ac-power-row">
+        <button id="ac-power-btn" class="power-btn" data-action="ac_power">
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <path d="M12 2v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M6.3 6.3a8 8 0 1 0 11.4 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="ac-temp-display">
+          <span id="ac-temp-value">--</span><span class="deg">&deg;C</span>
+        </div>
+      </div>
+
+      <div class="ac-temp-row">
+        <button class="ghost-btn wide" data-action="ac_temp_down">&minus;</button>
+        <button class="ghost-btn wide" data-action="ac_temp_up">&plus;</button>
+      </div>
+
+      <div class="panel-subtitle">Mode</div>
+      <div class="mode-row" id="mode-row">
+        <button class="mode-btn" data-mode="cool">Cool</button>
+        <button class="mode-btn" data-mode="heat">Heat</button>
+        <button class="mode-btn" data-mode="fan">Fan</button>
+        <button class="mode-btn" data-mode="dry">Dry</button>
+        <button class="mode-btn" data-mode="auto">Auto</button>
+      </div>
+
+      <div class="panel-subtitle">Fan Speed</div>
+      <div class="fan-row">
+        <button class="ghost-btn" data-action="ac_fan_down">&minus;</button>
+        <div class="fan-display" id="fan-display">--</div>
+        <button class="ghost-btn" data-action="ac_fan_up">&plus;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== CHAT SHEET ============================== -->
+  <div id="chat-backdrop" class="chat-backdrop"></div>
+  <div id="chat-sheet" class="chat-sheet">
+    <div class="chat-head">
+      <span class="chat-title">Ask Citra</span>
+      <label class="chat-speak" title="Read her replies aloud on this device">
+        <input type="checkbox" id="chat-speak-toggle">
+        <span>Read aloud</span>
+      </label>
+      <button id="chat-close" class="drawer-close chat-close" title="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="chat-log" class="chat-log">
+      <div class="chat-empty">Type anything you would say out loud.</div>
+    </div>
+
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input id="chat-input" class="chat-input" type="text"
+             placeholder="Turn on the bedroom lights" autocomplete="off">
+      <button type="submit" id="chat-send" class="chat-send" title="Send">
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <path d="M4 12l16-8-6 8 6 8-16-8z" fill="currentColor"/>
+        </svg>
+      </button>
+    </form>
+
+    <button id="console-btn" class="console-btn" title="Open a terminal tailing the assistant log">
+      Open console &mdash; live assistant log
+    </button>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

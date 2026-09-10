@@ -1,0 +1,50 @@
+{
+  "_comment": "Template for a new flat. Copy to citra_devices.json and edit. BOARDS are the unit - one block per physical switchboard, each with its own host. ROOM is just a label, and several boards can share one: a hall with three switchboards is three blocks that all say \"room\": \"hall\", and \"turn off the hall\" then fans out across all three. Give every board a static IP as a DHCP reservation in the router, never in the firmware.",
+
+  "boards": {
+    "bed1-lights": {
+      "host": "192.168.0.20",
+      "room": "bedroom 1",
+      "switches": {
+        "1": "light",
+        "2": "bedside light"
+      }
+    },
+    "bed1-fan": {
+      "_note": "A 1-channel module is enough for a board that only carries a fan - about 110 rupees cheaper than a 4-channel.",
+      "host": "192.168.0.21",
+      "room": "bedroom 1",
+      "switches": { "1": "fan" }
+    },
+
+    "hall-lights": {
+      "host": "192.168.0.22",
+      "room": "hall",
+      "switches": {
+        "1": "main light",
+        "2": "corner light"
+      }
+    },
+    "hall-fans": {
+      "_note": "Second board in the same room. Same \"room\" value, different host - that is the whole trick.",
+      "host": "192.168.0.23",
+      "room": "hall",
+      "switches": { "1": "fan" }
+    },
+
+    "kitchen": {
+      "host": "192.168.0.24",
+      "room": "kitchen",
+      "switches": {
+        "1": "light",
+        "2": "exhaust"
+      }
+    }
+  },
+
+  "acs": {
+    "bedroom 1": { "host": "192.168.0.30" }
+  },
+
+  "_power_note": "Every relay coil draws ~71mA and NC wiring keeps a relay energised whenever its light is OFF, so worst case is the normal case. A 4-channel board is 364mA and an HLK-PM01 (600mA) carries it comfortably. An 8-channel board is 648mA and will BROWN OUT on a PM01 - use an HLK-5M05 (1A) there."
+}

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Citra · Calls</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --line:#26303d; --ink:#e6edf3;
+    --dim:#8b949e; --accent:#2ea043; --warn:#d29922; --bad:#f85149;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif;
+       padding:16px 14px 48px;-webkit-font-smoothing:antialiased}
+  h1{font-size:20px;margin:0 0 2px;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:14px;margin-bottom:14px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;
+           color:var(--dim);margin:0 0 12px;font-weight:600}
+  label{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px}
+  input,select{width:100%;background:#0d1117;border:1px solid var(--line);
+    border-radius:8px;color:var(--ink);padding:9px 10px;font-size:15px}
+  input:focus{outline:none;border-color:var(--accent)}
+  button{background:var(--accent);color:#fff;border:0;border-radius:8px;
+    padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--dim)}
+  button:active{transform:translateY(1px)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .person{display:flex;align-items:center;gap:10px;padding:10px 0;
+          border-top:1px solid var(--line)}
+  .person:first-of-type{border-top:0}
+  .who{flex:1;min-width:0}
+  .who b{display:block;font-size:15px}
+  .who span{color:var(--dim);font-size:12.5px}
+  .pill{font-size:11px;color:var(--dim);border:1px solid var(--line);
+        border-radius:999px;padding:2px 8px}
+  .rec{border-top:1px solid var(--line);padding:11px 0}
+  .rec:first-of-type{border-top:0}
+  .rec .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .rec b{font-size:14.5px}
+  .rec small{color:var(--dim)}
+  audio{width:100%;margin-top:8px;height:34px}
+  pre{white-space:pre-wrap;word-break:break-word;background:#0d1117;
+      border:1px solid var(--line);border-radius:8px;padding:10px;
+      font-size:12.5px;color:var(--dim);margin:8px 0 0;max-height:200px;
+      overflow:auto}
+  .msg{font-size:13px;margin-top:10px;min-height:18px}
+  .ok{color:var(--accent)} .err{color:var(--bad)} .warn{color:var(--warn)}
+  .state{display:inline-block;width:8px;height:8px;border-radius:50%;
+         margin-right:6px;vertical-align:middle}
+  .empty{color:var(--dim);font-size:13px;padding:6px 0}
+  a{color:var(--dim)}
+</style>
+</head>
+<body>
+
+<h1>Citra · Calls</h1>
+<div class="sub">Who she may ring, when she may ring them, and what was said.</div>
+
+<div class="card">
+  <h2>Quiet hours</h2>
+  <div id="quietState" class="msg"></div>
+  <div class="grid2" style="margin-top:6px">
+    <div><label>No calls from</label><input id="qFrom" type="time" value="22:00"></div>
+    <div><label>Until</label><input id="qUntil" type="time" value="07:00"></div>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <label style="margin:0;display:flex;align-items:center;gap:7px;color:var(--ink);font-size:14px">
+      <input id="qOn" type="checkbox" style="width:auto" checked> Enforce
+    </label>
+    <button onclick="saveQuiet()" style="margin-left:auto">Save</button>
+  </div>
+  <div class="msg" id="quietMsg"></div>
+</div>
+
+<div class="card">
+  <h2>Phonebook</h2>
+  <label>Name Citra should recognise</label>
+  <input id="cName" placeholder="Shruti">
+  <div class="grid2">
+    <div><label>Number</label><input id="cNumber" placeholder="9876500000" inputmode="tel"></div>
+    <div><label>Relation</label><input id="cRelation" placeholder="girlfriend"></div>
+  </div>
+  <label>Also answers to (comma separated)</label>
+  <input id="cAliases" placeholder="shru, shruti sharma">
+  <div class="row" style="margin-top:12px">
+    <button onclick="addContact()">Save contact</button>
+    <button class="ghost" onclick="loadContacts()">Refresh</button>
+  </div>
+  <div class="msg" id="contactMsg"></div>
+  <div id="contacts" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+  <h2>Recordings</h2>
+  <div id="recordings"><div class="empty">Loading…</div></div>
+</div>
+
+<script>
+// The /api/* routes are token-gated. The token arrives in the URL the
+// first time (/calls?token=...) and is then remembered, so the page can
+// be reopened from a bookmark without it.
+const params = new URLSearchParams(location.search);
+let TOKEN = params.get("token") || "";
+try {
+  if (TOKEN) localStorage.setItem("citraToken", TOKEN);
+  else TOKEN = localStorage.getItem("citraToken") || "";
+} catch (e) { /* private window - keep whatever the URL gave us */ }
+
+function api(path, options) {
+  options = options || {};
+  options.headers = Object.assign({"X-Citra-Token": TOKEN,
+                                   "Content-Type": "application/json"},
+                                  options.headers || {});
+  return fetch(path, options).then(r => r.json().catch(() => ({ok:false, error:"bad response"})));
+}
+function say(id, text, cls) {
+  const el = document.getElementById(id);
+  el.textContent = text || "";
+  el.className = "msg " + (cls || "");
+}
+function esc(s){ return (s||"").replace(/[&<>"]/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// ---- quiet hours ----
+function loadQuiet(){
+  api("/api/quiet").then(d => {
+    if(!d.ok){ say("quietState","Couldn't read quiet hours — is the token right?","err"); return; }
+    document.getElementById("qFrom").value = d.quiet_from;
+    document.getElementById("qUntil").value = d.quiet_until;
+    document.getElementById("qOn").checked = d.enabled;
+    const dot = d.calling_allowed_now ? "var(--accent)" : "var(--warn)";
+    document.getElementById("quietState").innerHTML =
+      '<span class="state" style="background:'+dot+'"></span>' + esc(d.reason);
+  });
+}
+function saveQuiet(){
+  api("/api/quiet", {method:"POST", body: JSON.stringify({
+    quiet_from: document.getElementById("qFrom").value,
+    quiet_until: document.getElementById("qUntil").value,
+    enabled: document.getElementById("qOn").checked
+  })}).then(d => {
+    say("quietMsg", d.ok ? "Saved." : ("Failed: " + (d.error||"")), d.ok?"ok":"err");
+    loadQuiet();
+  });
+}
+
+// ---- phonebook ----
+function loadContacts(){
+  api("/api/contacts").then(d => {
+    const box = document.getElementById("contacts");
+    if(!d.ok){ box.innerHTML = '<div class="empty">Couldn\'t load contacts.</div>'; return; }
+    if(!d.contacts.length){ box.innerHTML = '<div class="empty">Nobody saved yet.</div>'; return; }
+    box.innerHTML = d.contacts.map(c => {
+      const aka = c.aliases && c.aliases.length ? " · aka " + esc(c.aliases.join(", ")) : "";
+      const rel = c.relation ? '<span class="pill">'+esc(c.relation)+'</span>' : "";
+      return '<div class="person"><div class="who"><b>'+esc(c.name)+'</b>'+
+             '<span>'+esc(c.number)+aka+'</span></div>'+rel+
+             '<button class="ghost" onclick="delContact(\''+
+             esc(c.name).replace(/'/g,"\\'")+'\')">Remove</button></div>';
+    }).join("");
+  });
+}
+function addContact(){
+  const name = document.getElementById("cName").value.trim();
+  const number = document.getElementById("cNumber").value.trim();
+  if(!name || !number){ say("contactMsg","A name and a number, please.","warn"); return; }
+  api("/api/contacts", {method:"POST", body: JSON.stringify({
+    name, number,
+    relation: document.getElementById("cRelation").value.trim(),
+    aliases: document.getElementById("cAliases").value,
+    overwrite: true
+  })}).then(d => {
+    if(d.ok){
+      say("contactMsg", "Saved " + d.contact.name + " → " + d.contact.number, "ok");
+      ["cName","cNumber","cRelation","cAliases"].forEach(i =>
+        document.getElementById(i).value = "");
+      loadContacts();
+    } else {
+      // A refusal here is the safety net doing its job, so show it plainly.
+      say("contactMsg", d.error || "Couldn't save that.", "err");
+    }
+  });
+}
+function delContact(name){
+  if(!confirm("Remove " + name + " from Citra's phonebook?")) return;
+  api("/api/contacts/delete", {method:"POST", body: JSON.stringify({name})})
+    .then(() => loadContacts());
+}
+
+// ---- recordings ----
+function loadRecordings(){
+  api("/api/recordings").then(d => {
+    const box = document.getElementById("recordings");
+    if(!d.ok || !d.recordings.length){
+      box.innerHTML = '<div class="empty">No calls recorded yet.</div>'; return;
+    }
+    box.innerHTML = d.recordings.map((r,i) => {
+      const mins = Math.floor(r.seconds/60), secs = Math.round(r.seconds%60);
+      const url = "/api/recordings/play?file=" + encodeURIComponent(r.file) +
+                  "&token=" + encodeURIComponent(TOKEN);
+      const t = r.transcript ? '<pre>'+esc(r.transcript)+'</pre>' : "";
+      return '<div class="rec"><div class="top"><b>'+esc(r.file.replace(/\.wav$/,""))+
+             '</b><small>'+mins+'m '+secs+'s</small></div>'+
+             '<small>'+esc(r.when)+'</small>'+
+             '<audio controls preload="none" src="'+url+'"></audio>'+t+'</div>';
+    }).join("");
+  });
+}
+
+loadQuiet(); loadContacts(); loadRecordings();
+setInterval(loadQuiet, 60000);
+</script>
+</body>
+</html>

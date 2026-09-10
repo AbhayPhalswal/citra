@@ -1,0 +1,674 @@
+/* =============================================================================
+   CITRA UI — palette
+   =============================================================================
+   The background stays TRUE BLACK (#000) on purpose: this runs fullscreen on
+   a 16" OLED panel, where a true-black pixel is an OFF pixel — that's the
+   whole reason to build a black UI for this display rather than a dark-gray
+   one, and it's the look that was asked for.
+
+   But "pure black background" is exactly the combination that causes eye
+   strain when it's paired with near-white text and saturated neon accents:
+   the contrast ratio goes far past what's comfortable to read for long
+   stretches, and bright text on black produces halation (the smeared,
+   glowing edges that make text feel like it's vibrating). Standard dark-mode
+   guidance addresses this by lifting the BACKGROUND to ~#121212 — which
+   would throw away the OLED benefit.
+
+   So this palette solves the same problem from the other side: keep the
+   background at true black and pull the FOREGROUND down instead.
+     - No pure white anywhere. Brightest text is ~82% luminance, off-white
+       and very slightly warm, never #fff.
+     - Accents are desaturated. #e0a856 is the amber of the holo-globe with
+       some saturation taken off, so it reads as warm gold without becoming
+       a light source in its own right.
+     - Secondary text sits far lower (~40%), which is legible on true black
+       precisely BECAUSE the background is so dark — the same value would be
+       unreadable on #121212.
+
+   The hue is AMBER rather than the earlier cyan, which serves both goals
+   at once: it matches the JARVIS holographic globe the 3D scene is
+   modelled on, and a warm hue emits considerably less blue light than
+   cyan at equal perceived brightness — blue being the part of the
+   spectrum actually implicated in eye fatigue and sleep disruption. The
+   look asked for and the comfort asked for happen to want the same color.
+   ============================================================================= */
+:root {
+  --accent: #e0a856;
+  --accent-soft: rgba(224, 168, 86, 0.13);
+  --accent-line: rgba(224, 168, 86, 0.16);
+
+  --text-primary: rgba(245, 238, 228, 0.82);
+  --text-secondary: rgba(245, 238, 228, 0.40);
+  --text-faint: rgba(245, 238, 228, 0.22);
+
+  --surface: #07090b;
+  --surface-raised: #0c1014;
+
+  --danger: #d98b8b;
+
+  /* One shared easing curve for every transition in the UI. A single
+     consistent curve is most of what makes an interface feel "designed"
+     rather than assembled — mixing ease/linear/ease-in-out per component
+     reads as subtly inconsistent even when no individual animation is
+     wrong. This one decelerates hard, which feels responsive on entry. */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  font-family: "Segoe UI Variable Display", "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  color: var(--text-primary);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+#core-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  z-index: 0;
+}
+
+/* ============================== STATUS + STATE ============================== */
+
+.status-row {
+  position: fixed;
+  top: 26px;
+  left: 28px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: background 0.5s var(--ease);
+}
+.status-dot.offline { background: var(--danger); }
+.status-dot.online { background: var(--accent); }
+
+.state-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  color: var(--text-faint);
+  transition: color 0.5s var(--ease);
+}
+.state-label.active { color: var(--text-secondary); }
+
+/* ================================= CAPTIONS ================================= */
+
+.caption-wrap {
+  position: fixed;
+  left: 50%;
+  /* Same fixed-px + safe-area pattern as .mic-fab, and for the same
+     reason -- see that rule's comment for the full explanation of why
+     vh-based bottom offsets are unreliable on iOS Safari specifically.
+     150px clears the mic button (which occupies roughly 70-122px from
+     the bottom) with a clean gap, rather than the two ever overlapping
+     on a short viewport. */
+  bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  transform: translate3d(-50%, 0, 0);
+  z-index: 10;
+  width: min(64vw, 820px);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Both caption lines animate ONLY opacity and transform — the two
+   properties the compositor can handle on its own, without asking the
+   main thread to re-layout or re-paint. Anything that animates color,
+   width, or top/left instead would stutter against the WebGL canvas
+   rendering behind it. */
+.transcript-line {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin-bottom: 14px;
+  opacity: 0;
+  transform: translate3d(0, 4px, 0);
+  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+}
+.transcript-line.show {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.caption-line {
+  font-size: 25px;
+  font-weight: 300;
+  letter-spacing: 0.005em;
+  line-height: 1.5;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translate3d(0, 8px, 0);
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+}
+.caption-line.show {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* ============================ ROOM CONTROL DRAWER =========================== */
+
+.control-fab {
+  position: fixed;
+  top: 22px;
+  right: 26px;
+  z-index: 20;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-line);
+  background: var(--surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.control-fab:hover {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.control-fab.drawer-open { opacity: 0; pointer-events: none; }
+
+/* ============================== CHAT (TYPED) ================================ */
+/* Sits to the LEFT of the control fab (which is right:26px, 38px wide). */
+.chat-fab {
+  position: fixed;
+  top: 22px;
+  right: 74px;
+  z-index: 20;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-line);
+  background: var(--surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.chat-fab:hover { opacity: 1; color: var(--accent); border-color: var(--accent); }
+.chat-fab.sheet-open { opacity: 0; pointer-events: none; }
+
+.chat-backdrop {
+  position: fixed; inset: 0; z-index: 24;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s var(--ease);
+}
+.chat-backdrop.show { opacity: 1; pointer-events: auto; }
+
+/* A BOTTOM sheet, not a side drawer: on a phone the keyboard comes up
+   from the bottom, and anchoring the input just above it keeps the field
+   and the last reply both visible while typing. */
+.chat-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 25;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--accent-line);
+  border-radius: 14px 14px 0 0;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(103%);
+  transition: transform 0.34s var(--ease);
+}
+.chat-sheet.open { transform: translateY(0); }
+
+.chat-head { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; }
+.chat-title { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-secondary); }
+.chat-speak { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.chat-speak input { accent-color: var(--accent); cursor: pointer; }
+.chat-close { position: static; }
+
+.chat-log {
+  flex: 1; overflow-y: auto; min-height: 120px; max-height: 46vh;
+  display: flex; flex-direction: column; gap: 9px;
+  padding: 6px 2px 12px;
+}
+.chat-empty { color: var(--text-faint); font-size: 13px; text-align: center; padding: 22px 0; }
+.chat-msg { max-width: 86%; padding: 9px 12px; border-radius: 12px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.chat-msg.me { align-self: flex-end; background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--text-primary); }
+.chat-msg.her { align-self: flex-start; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); color: var(--text-primary); }
+.chat-msg.her.pending { color: var(--text-faint); font-style: italic; }
+.chat-msg.her.failed { border-color: var(--danger); color: var(--danger); }
+.chat-meta { font-size: 10.5px; letter-spacing: 0.06em; color: var(--text-faint); margin-top: 4px; }
+
+.chat-form { display: flex; gap: 8px; align-items: center; }
+.chat-input {
+  flex: 1; min-width: 0;
+  background: var(--surface); color: var(--text-primary);
+  border: 1px solid var(--accent-line); border-radius: 10px;
+  padding: 11px 13px; font-size: 15px; font-family: inherit;
+}
+.chat-input::placeholder { color: var(--text-faint); }
+.chat-input:focus { outline: none; border-color: var(--accent); }
+.chat-send {
+  flex: none; width: 42px; height: 42px; border-radius: 10px;
+  border: 1px solid var(--accent-line); background: var(--surface);
+  color: var(--text-secondary); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.chat-send:hover { color: var(--accent); border-color: var(--accent); }
+
+.console-btn {
+  margin-top: 10px; width: 100%;
+  background: transparent; color: var(--text-faint);
+  border: 1px dashed rgba(255,255,255,0.10); border-radius: 10px;
+  padding: 9px; font-size: 12px; font-family: inherit; cursor: pointer;
+  transition: color 0.25s var(--ease), border-color 0.25s var(--ease);
+}
+.console-btn:hover { color: var(--accent); border-color: var(--accent-line); }
+
+/* ================================ MIC BUTTON ================================ */
+
+.mic-fab {
+  position: fixed;
+  left: 50%;
+  /* Fixed pixels, not vh -- confirmed via a real screenshot that 3.5vh
+     put this button completely behind Safari's own bottom toolbar on
+     iPhone, invisible and untappable. Two compounding iOS Safari
+     quirks: (1) vh units are calculated against the LARGEST possible
+     viewport (as if the toolbar were hidden), so a vh-based bottom
+     offset lands wherever the page WOULD end without the toolbar, not
+     where it visually ends with the toolbar showing -- 3.5vh worked out
+     to roughly 28-32px, well inside where a ~50px+ toolbar actually
+     sits; (2) env(safe-area-inset-bottom) is needed on top of that for
+     notched iPhones' home-indicator bar, and only returns a real value
+     (not 0) once the viewport meta tag includes viewport-fit=cover,
+     which index.html now does. 28px is a fixed, toolbar-independent
+     base distance from the true bottom edge; the env() term adds
+     whatever extra the home indicator needs on top of that. */
+  /* 70px, not a tighter value: this page has overflow:hidden and never
+     scrolls, so Safari has no scroll gesture to trigger its compact
+     toolbar -- the FULL expanded toolbar (back/menu/URL-field/refresh/
+     tabs row, visibly tall in the screenshot that caught this bug) is
+     what's on screen at all times, not the shorter collapsed form.
+     Generous clearance here costs nothing (empty space either way);
+     insufficient clearance reproduces the exact bug this fixes. */
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  transform: translate3d(-50%, 0, 0);
+  z-index: 20;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-line);
+  background: var(--surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.3s var(--ease), color 0.3s var(--ease),
+              border-color 0.3s var(--ease), background 0.25s var(--ease),
+              box-shadow 0.25s var(--ease);
+}
+.mic-fab:hover {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.mic-fab.recording {
+  opacity: 1;
+  color: #04121a;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 22px var(--accent-soft);
+  animation: mic-pulse 1.4s ease-in-out infinite;
+}
+.mic-fab.processing {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent-line);
+  animation: mic-spin 1s linear infinite;
+}
+.mic-fab.unavailable {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 14px var(--accent-soft); }
+  50% { box-shadow: 0 0 30px var(--accent-soft); }
+}
+@keyframes mic-spin {
+  from { transform: translate3d(-50%, 0, 0) rotate(0deg); }
+  to { transform: translate3d(-50%, 0, 0) rotate(360deg); }
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease);
+}
+.drawer-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.control-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: 300px;
+  max-width: 88vw;
+  padding: 22px 24px 30px;
+  overflow-y: auto;
+  /* Solid, never backdrop-filter: blur(). Blurring a full-height panel
+     against a continuously animating WebGL canvas re-runs the blur every
+     single frame, and was measured as the real cause of this UI's jank —
+     not the 3D scene. A solid fill costs the compositor nothing. */
+  background: var(--surface);
+  border-left: 1px solid var(--accent-line);
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  /* translate3d, not translateX: this promotes the drawer to its own GPU
+     compositor layer so the slide runs entirely on the compositor thread. */
+  transform: translate3d(100%, 0, 0);
+  transition: transform 0.38s var(--ease);
+  will-change: transform;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-line) transparent;
+}
+.control-drawer.open { transform: translate3d(0, 0, 0); }
+
+.drawer-close {
+  align-self: flex-end;
+  width: 28px;
+  height: 28px;
+  margin-bottom: -8px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.25s var(--ease);
+}
+.drawer-close:hover { color: var(--text-primary); }
+
+/* ================================== PANELS ================================== */
+
+/* No card borders, no rounded boxes, no inset glows. Sections are separated
+   by whitespace and one hairline rule — nesting bordered cards inside an
+   already-bordered drawer is visual noise that adds no information. */
+.panel + .panel {
+  border-top: 1px solid rgba(224, 168, 86, 0.07);
+  padding-top: 24px;
+}
+
+.panel-title {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 18px;
+}
+
+.panel-subtitle {
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 22px 0 10px;
+}
+
+/* --------------------------------- Lights ---------------------------------- */
+
+.brightness-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.relay-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.relay-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.relay-label {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+/* A real on/off switch, not a slider — the relay hardware has exactly two
+   states, and a draggable track would imply a dimming range that doesn't
+   physically exist. Built on a checkbox so it stays keyboard-operable and
+   is announced correctly by screen readers. */
+.toggle-switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+  display: block;
+  cursor: pointer;
+}
+.toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: rgba(245, 238, 228, 0.07);
+  transition: background 0.3s var(--ease);
+}
+.toggle-track::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  transition: transform 0.3s var(--ease), background 0.3s var(--ease);
+}
+.toggle-switch input:checked + .toggle-track {
+  background: var(--accent-soft);
+}
+.toggle-switch input:checked + .toggle-track::before {
+  transform: translate3d(18px, 0, 0);
+  background: var(--accent);
+}
+.toggle-switch input:focus-visible + .toggle-track {
+  outline: 1px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* --------------------------------- AC remote -------------------------------- */
+
+.ac-power-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.power-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-line);
+  background: transparent;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease), background 0.3s var(--ease);
+}
+.power-btn.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.ac-temp-display {
+  font-size: 38px;
+  font-weight: 200;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums; /* keeps the number from shifting
+                                         width as it counts 19 -> 20 -> 21 */
+}
+.ac-temp-display .deg {
+  font-size: 15px;
+  color: var(--text-faint);
+  margin-left: 3px;
+}
+
+.ac-temp-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mode-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.fan-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fan-display {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ------------------------------ shared controls ----------------------------- */
+
+.ghost-btn,
+.mode-btn {
+  padding: 9px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: rgba(245, 238, 228, 0.04);
+  color: var(--text-secondary);
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.ghost-btn:hover,
+.mode-btn:hover {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+.ghost-btn:active,
+.mode-btn:active {
+  background: rgba(224, 168, 86, 0.18);
+}
+.ghost-btn.wide { padding: 11px; font-size: 15px; }
+
+.mode-btn.active {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+/* =================================== TOAST ================================== */
+
+.error-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  z-index: 30;
+  max-width: 340px;
+  padding: 13px 16px;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  border-left: 2px solid var(--danger);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.error-toast.show {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* ================================ RESPONSIVE ================================ */
+
+@media (max-width: 900px) {
+  .control-drawer { width: 100vw; max-width: 100vw; }
+  .caption-line { font-size: 19px; }
+  .caption-wrap { width: 84vw; }
+}
+
+/* Respect the OS-level "reduce motion" setting: kill the UI transitions.
+   The WebGL orb keeps its slow breathing (it's the assistant's only status
+   indicator and freezing it would remove information, not just decoration)
+   but app.js damps its motion — see PREFERS_REDUCED_MOTION there. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
