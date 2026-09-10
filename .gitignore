@@ -24,3 +24,6 @@ __pycache__/
 
 # your WiFi credentials
 */wifi_secrets.h
+
+# Claude Code's project folder - local tooling, not part of the project
+.claude/
