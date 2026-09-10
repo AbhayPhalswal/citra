@@ -111,7 +111,7 @@ devices, the ports.
 ## Getting started
 
 ```bash
-git clone https://github.com/abhaysggn/citra
+git clone https://github.com/AbhayPhalswal/citra
 cd citra
 python -m venv jarvis_venv && jarvis_venv\Scripts\activate
 pip install -r requirements.txt
