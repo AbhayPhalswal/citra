@@ -13,10 +13,9 @@
 #include <ArduinoOTA.h>
 
 // -----------------------------------------------------------------------------
-// USER CONFIGURATION — EDIT THESE TWO LINES
+// USER CONFIGURATION — put your WiFi in wifi_secrets.h
 // -----------------------------------------------------------------------------
-const char* WIFI_SSID     = "YOUR_WIFI_NAME"; // <-- UPDATE THIS
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"; // <-- UPDATE THIS
+#include "wifi_secrets.h"   // gitignored - copy wifi_secrets.example.h
 
 const char* MDNS_HOSTNAME = "jarvis-relays";
 

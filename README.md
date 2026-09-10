@@ -125,7 +125,9 @@ The hardware side is optional — everything on your PC works without a
 single relay attached.
 
 **For the flat:** flash `relay_server/` and `ac_ir_server/` to an
-ESP8266, set your WiFi in the sketch, give each board a DHCP
+ESP8266. Copy `wifi_secrets.example.h` to `wifi_secrets.h` in each
+sketch folder and put your network in it — that file is gitignored, so
+your password never ends up in a commit. Give each board a DHCP
 reservation, then list them in `citra_devices.json` (copy
 `citra_devices.example.json`).
 

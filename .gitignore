@@ -21,3 +21,6 @@ __pycache__/
 # --- large model files (download them, see README) ---------------------
 *.onnx
 !hey_citra.onnx
+
+# your WiFi credentials
+*/wifi_secrets.h

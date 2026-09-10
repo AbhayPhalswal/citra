@@ -18,8 +18,8 @@
 // -----------------------------------------------------------------------------
 // USER CONFIGURATION
 // -----------------------------------------------------------------------------
-const char* WIFI_SSID     = "YOUR_WIFI_NAME";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+#include "wifi_secrets.h"   // gitignored - see wifi_secrets.example.h
+
 
 const char* MDNS_HOSTNAME = "jarvis-ac";  // reachable at http://jarvis-ac.local
 
