@@ -15,6 +15,14 @@
   <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
 
+<p align="center">
+  <img src="docs/switchboard.jpg" alt="A NodeMCU wired into a real switchboard" width="760">
+</p>
+<p align="center">
+  <i>This is the whole idea. A ₹200 NodeMCU behind an ordinary switchboard —<br>
+  the switches still work by hand, and now they work by voice.</i>
+</p>
+
 ---
 
 ```
@@ -52,6 +60,13 @@ switchboard** in parts, and nothing to pay anyone monthly.
 Lights, fans and TV through relays wired into real switchboards across
 11 boards (bedrooms, hall, kitchen, bathroom). Air conditioner over IR:
 power, temperature, mode.
+
+<p align="center">
+  <img src="docs/ac-ir.jpg" alt="The IR blaster that drives the air conditioner" width="330">
+</p>
+<p align="center">
+  <i>The AC controller: an ESP8266 and an IR LED. Not pretty. Works.</i>
+</p>
 
 **It works with the internet down.** A light or AC command never leaves
 your WiFi — a local pattern match, then a direct call to the board.
