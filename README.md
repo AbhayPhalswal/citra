@@ -31,6 +31,19 @@ switchboard** in parts, and nothing to pay anyone monthly.
 
 ---
 
+## What it looks like
+
+<p align="center">
+  <img src="docs/dashboard.png" alt="Citra's dashboard - voice orb, light switches, climate control" width="900">
+</p>
+
+<p align="center">
+  <i>The dashboard. Every switch in the flat, the AC, and a mic button —<br>
+  installs to your phone's home screen like an app.</i>
+</p>
+
+---
+
 ## What it does
 
 **44 tools.** All of them are in this repo, none are on a roadmap.
