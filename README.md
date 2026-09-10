@@ -19,8 +19,9 @@
   <img src="docs/switchboard.jpg" alt="A NodeMCU wired into a real switchboard" width="760">
 </p>
 <p align="center">
-  <i>This is the whole idea. A ₹200 NodeMCU behind an ordinary switchboard —<br>
-  the switches still work by hand, and now they work by voice.</i>
+  <i>This is the whole idea. A ₹200 NodeMCU behind an ordinary switchboard.<br>
+  Leave the wall switch on, and that light now answers to your voice,<br>
+  your phone, or a schedule.</i>
 </p>
 
 ---
@@ -30,7 +31,7 @@
   "Citra, what's on my screen?"        → a local model looks and answers
   "Citra, block instagram"             → blocked, until you say otherwise
   "Citra, write me a python script..." → it appears in Notepad, ready to run
-  "Citra, turn the geyser on at 6am"   → scheduled
+  "Citra, turn on the warm light at 6am" → scheduled
 ```
 
 Not smart bulbs. **Your existing switchboards**, rewired with relay
@@ -89,12 +90,21 @@ code opens in Notepad, ready to run. A fast model by default, a much
 larger one when you ask for something big.
 
 ### ⏰ Remembers and schedules — 4 tools
-Spoken reminders, and **scheduled room actions**: *"turn the geyser on
-at 6am"*. List what's pending, cancel any of it.
+Spoken reminders, and **scheduled room actions**: *"turn on the
+warm light at 6am"*. List what's pending, cancel any of it.
 
-### 📱 Phone dashboard
+### 📱 Phone dashboard — and one-tap iPhone Shortcuts
 Installs to your home screen like an app. Every switch, the AC, live
 state. Type to it instead of talking, and have it read replies aloud.
+
+The `/api/*` routes are one-shot HTTP with a shared token, built for
+**iOS Shortcuts** and Android's equivalents — so any switch becomes a
+button on your home screen, no app to install and no cloud in between.
+
+<p align="center">
+  <img src="docs/shortcuts.jpg" alt="iPhone home screen with one-tap shortcuts for each light" width="300">
+</p>
+<p align="center"><i>Real lights, real home screen, one tap each.</i></p>
 
 ### 🗣️ Speech that isn't annoying
 Wake word **"Hey Citra"**, Whisper transcription and neural TTS — all
