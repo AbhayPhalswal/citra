@@ -37,6 +37,10 @@ the initial public push.
   `citra_llm_client.py` (LM Studio and Gemini backends with a shared
   `ConversationMemory`), and a 475-line router that owns the
   controllers and the fast-then-smart decision. No behaviour change.
+- The spoken protocols and the SemanticRouter moved out of
+  `jarvis_voice_assistant.py` (3714 -> 2977 lines) into
+  `citra_protocols.py`, which speaks through an injected
+  `set_speaker()` instead of reaching into the assistant.
 - Every runtime dependency is pinned to the version Citra is run with,
   and seven packages the code imports but `requirements.txt` never
   listed (silero-vad, torch, sentence-transformers, PyAudio, av,

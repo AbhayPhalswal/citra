@@ -1,0 +1,13 @@
+.venv/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.log
+citra_contacts.json
+citra_api_token.txt
+citra_cert.pem
+citra_key.pem
+hey_citra.onnx.data
+model_backups/

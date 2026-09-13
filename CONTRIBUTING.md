@@ -68,7 +68,8 @@ house style: a short imperative first line, then the reasoning.
 
 | File | What it owns |
 | --- | --- |
-| `jarvis_voice_assistant.py` | Wake word, speech-to-text, the spoken protocols, text-to-speech. The main process. |
+| `jarvis_voice_assistant.py` | Wake word, speech-to-text, the listening state machine, text-to-speech. The main process. |
+| `citra_protocols.py` | The spoken protocols (lighting, cooling, time, weather) and the SemanticRouter that picks one. |
 | `jarvis_router.py` | Owns the controllers. Fast Path first, then the Smart Path. Tool-call dispatch. |
 | `citra_fast_path.py` | The regex-to-board table that works with the internet down. |
 | `citra_llm_client.py` | LM Studio and Gemini backends, tool-call round trips, conversation memory. |
