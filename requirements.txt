@@ -13,7 +13,7 @@ torch==2.13.0
 sounddevice==0.5.5
 SoundCard==0.4.6
 PyAudio==0.2.14
-av==18.0.0
+av==18.1.0
 numpy==2.5.1
 
 # Hardware + web
