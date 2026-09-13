@@ -6,8 +6,8 @@ against a fake controller - no board, no model, no network.
 """
 import pytest
 
-import jarvis_router
-from jarvis_router import INTENTS, JarvisRouter, RouteResult
+from citra_fast_path import INTENTS
+from jarvis_router import JarvisRouter, RouteResult
 
 
 @pytest.fixture
@@ -133,9 +133,8 @@ def test_a_handler_that_raises_becomes_a_failed_result(router, fake_controller, 
     def explode(controller, match):
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(jarvis_router, "_handle_ac_power_on", explode)
-    # INTENTS was built at import time with the ORIGINAL function object,
-    # so patch the table entry too - that is what _try_fast_path walks.
+    # INTENTS holds the handler function objects directly, so patching
+    # the table entry is what actually changes what run_fast_path calls.
     for intent in INTENTS:
         if intent.description == "turn on the ac":
             monkeypatch.setattr(intent, "handler", explode)
