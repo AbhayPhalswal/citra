@@ -12,6 +12,7 @@
   <img alt="platform" src="https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white">
   <img alt="hardware" src="https://img.shields.io/badge/hardware-ESP8266-E7352C?logo=espressif&logoColor=white">
   <img alt="tools" src="https://img.shields.io/badge/tools-44-success">
+  <a href="https://github.com/AbhayPhalswal/citra/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AbhayPhalswal/citra/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="license" src="https://img.shields.io/badge/license-source--available-lightgrey">
 </p>
 
@@ -143,7 +144,9 @@ tool set.
 
 **Run `python citra_doctor.py`** and it checks every subsystem in about
 ten seconds: Python, imports, each board, the AI backends, the audio
-devices, the ports.
+devices, the ports. While it runs, `GET /health` on the dashboard port
+answers without touching a board, and every process writes JSON log
+lines (`CITRA_LOG_FORMAT=text` for a terminal you're watching).
 
 ---
 
@@ -158,12 +161,26 @@ devices, the ports.
 git clone https://github.com/AbhayPhalswal/citra
 cd citra
 python -m venv jarvis_venv && jarvis_venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt        # pinned; every version is the one this runs with
 python -m piper.download_voices en_US-amy-medium
 setx GEMINI_API_KEY "your-key"        # free tier is fine
 python citra_doctor.py                 # check everything first
 python jarvis_voice_assistant.py
 ```
+
+Every environment variable Citra reads is in [`.env.example`](.env.example).
+
+To run the tests and the linter (no hardware, no model, any OS):
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+ruff check .
+```
+
+The same runs in CI on every push, plus a dependency audit and a full
+install on a Windows runner. [CONTRIBUTING.md](CONTRIBUTING.md) has the
+rest: how the fakes work, where things live, how commits are shaped.
 
 The hardware side is optional — everything on your PC works without a
 single relay attached.
@@ -186,6 +203,11 @@ things nobody wrote a tool for. It also means:
 - **The dashboard binds to loopback only.** It refuses to start on any
   other interface without `CITRA_ALLOW_REMOTE=1`. Do not set that unless
   you understand exactly what you are opening.
+- **There is one guard rail.** A short deny-list refuses the commands
+  no spoken request can legitimately mean - format a drive, delete a
+  system root, wipe the registry, shut the machine down - and
+  `CITRA_RUN_COMMAND=off` removes the tool entirely. Everything else
+  runs. [SECURITY.md](SECURITY.md) has the whole threat model.
 - **PC tools are not on the phone API at all** — voice and local chat
   only. The token-gated API reaches lights and the AC, nothing else.
 - The API token is generated on first run and gitignored.
