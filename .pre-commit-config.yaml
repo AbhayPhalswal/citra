@@ -1,0 +1,8 @@
+# Optional but recommended:  pip install pre-commit && pre-commit install
+# Runs the same ruff check CI runs, before a commit can be made.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.7
+    hooks:
+      - id: ruff
+        args: [--fix]

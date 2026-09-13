@@ -1,0 +1,14 @@
+# Keeps the pins in requirements*.txt and the actions in ci.yml current.
+# One PR a week at most per ecosystem, so it never floods the history.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
