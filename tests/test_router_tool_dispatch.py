@@ -9,11 +9,11 @@ import json
 
 import pytest
 
+from citra_llm_client import _to_gemini_declaration
 from jarvis_router import (
     _TOOL_NAME_TO_CONTROLLER_ATTR,
     ALL_TOOL_SCHEMA,
     JarvisRouter,
-    _to_gemini_declaration,
 )
 
 
