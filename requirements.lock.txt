@@ -68,7 +68,7 @@ rich==15.0.0
 safetensors==0.8.0
 scikit-learn==1.9.1
 scipy==1.18.1
-sentence-transformers==5.7.0
+sentence-transformers==6.0.1
 shellingham==1.5.4
 silero-vad==6.2.1
 SoundCard==0.4.6
