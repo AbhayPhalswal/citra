@@ -9,6 +9,7 @@ license = { text = "MIT" }
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+asyncio_mode = "auto"
 # Every test in this suite must run with no hardware, no LM Studio, no
 # Gemini key and no microphone. Anything that needs a real board or a
 # real model belongs behind citra_doctor.py, not in here.
