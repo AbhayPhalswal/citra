@@ -53,6 +53,7 @@ the hope that it's harmless.
 import ctypes
 import logging
 import os
+import re
 import subprocess
 import time
 from dataclasses import dataclass, field
@@ -256,6 +257,62 @@ def _remove_domain_block(lines: list, domain: str) -> list:
 # the model tries to summarize it.
 RUN_COMMAND_TIMEOUT_SECONDS = 20.0
 RUN_COMMAND_MAX_OUTPUT_CHARS = 2000
+RUN_COMMAND_MAX_LENGTH = 500  # a spoken request never legitimately becomes a
+                              # 500-character shell line; past this it is the
+                              # model looping or something injected.
+
+# run_command's one guard rail. Everything else about it is deliberately
+# open (see the module docstring), but there is a short list of commands
+# that no spoken request to a home assistant can ever legitimately mean
+# and whose damage is instant and irreversible: wiping a disk, deleting
+# a system root, nuking the registry, or turning the machine off from
+# under the voice pipeline. A misheard word or a model that decides to
+# "clean up" must not be able to reach these. Matched on the command
+# with quotes and doubled whitespace stripped, case-insensitively, so
+# "FORMAT c:" and 'format  "C:"' are the same thing.
+#
+# CITRA_RUN_COMMAND=off disables the tool entirely - the right setting
+# for a household install where nobody will ever ask for a shell.
+RUN_COMMAND_ENV = "CITRA_RUN_COMMAND"
+RUN_COMMAND_DENYLIST: tuple[str, ...] = (
+    r"\bformat\s+[a-z]:",                                  # format c:
+    r"\bdiskpart\b",
+    r"\bbcdedit\b",
+    r"\b(rd|rmdir|del|erase)\b[^&|;]*\s/s\b[^&|;]*\s[a-z]:\\?(\s|$)",   # rd /s /q c:\
+    r"\b(rd|rmdir|del|erase)\b[^&|;]*\b[a-z]:\\(windows|users|program files)\b",
+    r"\brm\s+(-[a-z]*r[a-z]*f|-[a-z]*f[a-z]*r)\s+[/\\]",  # rm -rf /
+    r"\bremove-item\b[^&|;]*-recurse[^&|;]*\s[a-z]:\\?(\s|$)",
+    r"\breg\s+delete\b",
+    r"\bshutdown\b",                                       # there is no voice tool
+    r"\bstop-computer\b",                                  # for this on purpose:
+    r"\brestart-computer\b",                               # the pipeline would die
+    r"\bvssadmin\b.*\bdelete\b",
+    r"\bcipher\s+/w",
+    r"\bmkfs\b",
+    r"\bdd\s+if=",
+)
+_RUN_COMMAND_DENY_RE = re.compile("|".join(f"(?:{p})" for p in RUN_COMMAND_DENYLIST), re.IGNORECASE)
+
+
+def run_command_refusal(command: str) -> str | None:
+    """
+    Why run_command must NOT run `command`, or None if it may.
+
+    Pure and importable on its own so the policy can be unit-tested
+    without a PCController, and so anything else that ever grows a
+    shell (the dashboard, a Pi agent) applies the identical rule.
+    """
+    if os.environ.get(RUN_COMMAND_ENV, "").strip().lower() in ("off", "0", "false", "no"):
+        return "run_command is switched off on this machine (CITRA_RUN_COMMAND=off)."
+    text = (command or "").strip()
+    if not text:
+        return "No command given."
+    if len(text) > RUN_COMMAND_MAX_LENGTH:
+        return f"That command is {len(text)} characters long - I won't run anything over {RUN_COMMAND_MAX_LENGTH}."
+    normalised = re.sub(r"\s+", " ", text.replace('"', "").replace("'", ""))
+    if _RUN_COMMAND_DENY_RE.search(normalised):
+        return "I won't run that - it's on the short list of commands that can't be undone."
+    return None
 
 # Named app-launch presets — "open my X setup" opens each app in the list,
 # in order. Same reasoning as APP_LAUNCHERS above: a small, explicit,
@@ -897,12 +954,11 @@ class PCController:
         what Citra actually ran, since this is real, unscoped command
         execution with no undo.
         """
-        command = command.strip()
-        if not command:
-            return PCActionResult(
-                success=False, action="run_command",
-                message="No command given.",
-            )
+        command = (command or "").strip()
+        refusal = run_command_refusal(command)
+        if refusal is not None:
+            logger.warning("Refused command %r: %s", command, refusal)
+            return PCActionResult(success=False, action="run_command", message=refusal)
         try:
             result = subprocess.run(
                 command,
