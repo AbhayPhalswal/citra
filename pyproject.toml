@@ -1,0 +1,17 @@
+[project]
+name = "citra"
+version = "0.1.0"
+description = "A voice assistant that runs your flat and your PC. Local speech, real relays, no subscription."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+# Every test in this suite must run with no hardware, no LM Studio, no
+# Gemini key and no microphone. Anything that needs a real board or a
+# real model belongs behind citra_doctor.py, not in here.
+markers = [
+    "hardware: needs a real NodeMCU on the LAN (never run in CI)",
+]

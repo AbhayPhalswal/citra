@@ -27,3 +27,8 @@ __pycache__/
 
 # Claude Code's project folder - local tooling, not part of the project
 .claude/
+
+# --- local dev / test environment ---------------------------------------
+.venv/
+.pytest_cache/
+.ruff_cache/

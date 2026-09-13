@@ -1,0 +1,11 @@
+# What the test suite and CI need, on top of the runtime deps that the
+# tests actually import (requests, aiohttp, numpy). The speech and
+# Windows-only packages in requirements.txt are deliberately NOT here:
+# every test mocks the hardware/LLM boundary, so CI runs on plain Linux.
+pytest==9.1.1
+pytest-aiohttp==1.1.1
+ruff==0.16.7
+pip-audit==2.10.1
+requests==2.34.2
+aiohttp==3.14.3
+numpy==2.5.3
