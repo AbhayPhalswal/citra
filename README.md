@@ -12,7 +12,7 @@
   <img alt="platform" src="https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white">
   <img alt="hardware" src="https://img.shields.io/badge/hardware-ESP8266-E7352C?logo=espressif&logoColor=white">
   <img alt="tools" src="https://img.shields.io/badge/tools-44-success">
-  <img alt="license" src="https://img.shields.io/badge/license-MIT-blue">
+  <img alt="license" src="https://img.shields.io/badge/license-source--available-lightgrey">
 </p>
 
 <p align="center">
@@ -149,6 +149,11 @@ devices, the ports.
 
 ## Getting started
 
+> **Read it, don't run it — for now.** This repo is public so you can
+> see how it works, not so you can take it. Running it, reusing it, or
+> building on it needs my permission. See [LICENSE](LICENSE), and just
+> ask.
+
 ```bash
 git clone https://github.com/AbhayPhalswal/citra
 cd citra
@@ -206,4 +211,7 @@ Built by a first-year Data Science & AI student, for one flat in Delhi.
 
 ## License
 
-MIT — do what you like with it.
+**Source-available, all rights reserved.** You're welcome to read it and
+learn from it. Running, copying, modifying, redistributing or selling it
+needs written permission — open an issue or message me on GitHub. Full
+terms in [LICENSE](LICENSE).
