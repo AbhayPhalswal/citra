@@ -46,13 +46,11 @@ import logging
 import os
 import secrets
 import ssl
+import subprocess
 import time
-from typing import Optional
 
 import aiohttp
-from aiohttp import web, WSMsgType
-
-import subprocess
+from aiohttp import WSMsgType, web
 
 import citra_mute
 from jarvis_hardware_api import SmartRoomController
@@ -226,7 +224,7 @@ HW_STATE_CACHE_SECONDS = 2.0  # short enough that the UI still feels live
                               # its own fresh poll anyway), long enough to
                               # absorb a burst of reconnects.
 _hw_state_lock = asyncio.Lock()
-_hw_state_cache: Optional[dict] = None
+_hw_state_cache: dict | None = None
 _hw_state_cache_time = 0.0
 
 
@@ -486,7 +484,7 @@ async def voice_handler(request: web.Request) -> web.Response:
             {"success": False, "message": "Citra's voice assistant isn't running right now."},
             status=503,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return web.json_response(
             {"success": False, "message": "Timed out waiting for the voice assistant."},
             status=504,
@@ -1152,7 +1150,7 @@ if __name__ == "__main__":
     # microphone feature (getUserMedia) doesn't actually need TLS here
     # anymore. Kept as an option rather than removed since it doesn't cost
     # anything to leave working.
-    ssl_context: Optional[ssl.SSLContext] = None
+    ssl_context: ssl.SSLContext | None = None
     if os.path.exists(TLS_CERT_PATH) and os.path.exists(TLS_KEY_PATH):
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ssl_context.load_cert_chain(TLS_CERT_PATH, TLS_KEY_PATH)

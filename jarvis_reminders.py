@@ -43,8 +43,8 @@ import re
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("jarvis_reminders")
@@ -58,7 +58,7 @@ class ReminderActionResult:
     success: bool
     action: str
     message: str
-    data: Optional[dict] = field(default=None)
+    data: dict | None = field(default=None)
 
     def to_dict(self) -> dict:
         return {"success": self.success, "action": self.action, "message": self.message, "data": self.data}
@@ -75,7 +75,7 @@ class _PendingReminder:
     # and one timer mechanism deliberately -- they differ only in what
     # happens at fire time, so splitting them would duplicate the
     # scheduling, listing and cancelling logic for no gain.
-    command: Optional[str] = None
+    command: str | None = None
 
 
 MAX_REMINDER_MINUTES = 24 * 60  # 24 hours — a sane ceiling for an
@@ -92,7 +92,7 @@ MIN_REMINDER_SECONDS = 5  # below this, "remind me" is almost certainly a
                                     # near-instantly with no real gap.
 
 
-def _minutes_until_clock_time(at_time: str) -> Optional[float]:
+def _minutes_until_clock_time(at_time: str) -> float | None:
     """Minutes from now until the next occurrence of a wall-clock time
     like "02:00", "2 am", "14:30". Returns None if unparseable.
 
@@ -139,9 +139,9 @@ class ReminderController:
 
     def __init__(
         self,
-        speak_fn: Optional[Callable[[str], object]] = None,
-        notify_fn: Optional[Callable[[str], None]] = None,
-        action_fn: Optional[Callable[[str], object]] = None,
+        speak_fn: Callable[[str], object] | None = None,
+        notify_fn: Callable[[str], None] | None = None,
+        action_fn: Callable[[str], object] | None = None,
     ):
         # action_fn runs a scheduled command when its timer fires, by
         # routing the text exactly as if it had just been spoken. Injected
@@ -159,7 +159,7 @@ class ReminderController:
         self._speak_fn = speak_fn or (lambda text: logger.info("[no speak_fn configured] Would have said: %s", text))
         self._notify_fn = notify_fn
         self._lock = threading.Lock()
-        self._pending: Dict[str, _PendingReminder] = {}
+        self._pending: dict[str, _PendingReminder] = {}
 
     def _fire(self, reminder_id: str) -> None:
         with self._lock:
@@ -192,8 +192,8 @@ class ReminderController:
     def schedule_action(
         self,
         command: str,
-        at_time: Optional[str] = None,
-        minutes: Optional[float] = None,
+        at_time: str | None = None,
+        minutes: float | None = None,
     ) -> ReminderActionResult:
         """Runs `command` later, as if it had been spoken then. Takes
         either a wall-clock time ("2 am") or a relative delay."""
@@ -300,7 +300,7 @@ class ReminderController:
 
     def list_reminders(self) -> ReminderActionResult:
         with self._lock:
-            items: List[_PendingReminder] = list(self._pending.values())
+            items: list[_PendingReminder] = list(self._pending.values())
 
         if not items:
             return ReminderActionResult(success=True, action="list_reminders", message="You don't have any reminders set right now.")

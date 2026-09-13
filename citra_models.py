@@ -48,8 +48,8 @@ import shutil
 import subprocess
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional
 
 # --------------------------------------------------------------------------
 # MODELS
@@ -156,7 +156,7 @@ def describe_routing() -> str:
 # --------------------------------------------------------------------------
 # NEMOTRON, VIA OPENCODE
 # --------------------------------------------------------------------------
-def _opencode_exe() -> Optional[str]:
+def _opencode_exe() -> str | None:
     """
     The path Windows can actually CreateProcess.
 
@@ -223,7 +223,7 @@ def ask_nemotron(prompt: str, timeout: float = NEMOTRON_TIMEOUT_SECONDS) -> tupl
     # opencode prints a banner and a "> build · model" header before the
     # answer. Strip those rather than handing them to the user as if the
     # model had said them.
-    lines = [l for l in out.splitlines() if l.strip()]
+    lines = [line for line in out.splitlines() if line.strip()]
     while lines and (lines[0].lstrip().startswith(">") or set(lines[0].strip()) <= set("█▀▄ ⠀")):
         lines.pop(0)
     return True, "\n".join(lines).strip(), elapsed
@@ -348,7 +348,7 @@ def _safe_slug(text: str, limit: int = 40) -> str:
     return ("_".join(words))[:limit] or "script"
 
 
-def write_code_to_notepad(request: str, on_done: Optional[Callable] = None,
+def write_code_to_notepad(request: str, on_done: Callable | None = None,
                           model: str = "gemini") -> threading.Thread:
     """
     Generate Python for `request`, save it, open Notepad.
@@ -422,7 +422,7 @@ class CodeController:
     so out loud.
     """
 
-    def __init__(self, notify_fn: Optional[Callable[[str], None]] = None):
+    def __init__(self, notify_fn: Callable[[str], None] | None = None):
         self._notify = notify_fn
 
     def write_python_code(self, request: str, model: str = "gemini"):

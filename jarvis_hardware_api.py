@@ -37,12 +37,10 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry  # type: ignore
-
 
 # -----------------------------------------------------------------------------
 # LOGGING
@@ -78,7 +76,7 @@ class HardwareResult:
     success: bool
     endpoint: str
     message: str
-    data: Optional[dict] = field(default=None)
+    data: dict | None = field(default=None)
 
     def to_dict(self) -> dict:
         return {
@@ -169,7 +167,7 @@ class SmartRoomController:
     # -------------------------------------------------------------------
     # INTERNAL: single shared request method
     # -------------------------------------------------------------------
-    def _get(self, host: str, path: str, params: Optional[dict] = None) -> HardwareResult:
+    def _get(self, host: str, path: str, params: dict | None = None) -> HardwareResult:
         """
         Every public method below funnels through here. Centralizing the
         actual HTTP call and its error handling in one place means every
@@ -256,7 +254,7 @@ class SmartRoomController:
     # and the URL scheme /relay1../relay4..) — the 0-indexing lives only
     # inside the firmware's internal array, not in this public API surface.
 
-    def _validate_relay_number(self, relay_number: int) -> Optional[HardwareResult]:
+    def _validate_relay_number(self, relay_number: int) -> HardwareResult | None:
         """Shared bounds check so every relay method rejects bad input the
         same way, before it ever reaches the network."""
         if relay_number not in (1, 2, 3, 4):

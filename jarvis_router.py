@@ -50,25 +50,25 @@ must be in the same directory (or importable on your PYTHONPATH).
 =============================================================================
 """
 
-import os
-import re
 import copy
 import json
-import time
 import logging
+import os
+import re
+import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional, Pattern
+from re import Pattern
 
 import requests
 
-from jarvis_hardware_api import SmartRoomController, HardwareResult, JARVIS_TOOL_SCHEMA
-from jarvis_pc_control import PCController, PC_TOOL_SCHEMA
-from jarvis_vision import VisionController, VISION_TOOL_SCHEMA
-from jarvis_reminders import ReminderController, REMINDER_TOOL_SCHEMA
-from citra_models import CodeController, CODE_TOOL_SCHEMA
-from citra_contacts import ContactController, CONTACT_TOOL_SCHEMA
-
+from citra_contacts import CONTACT_TOOL_SCHEMA, ContactController
+from citra_models import CODE_TOOL_SCHEMA, CodeController
+from jarvis_hardware_api import JARVIS_TOOL_SCHEMA, HardwareResult, SmartRoomController
+from jarvis_pc_control import PC_TOOL_SCHEMA, PCController
+from jarvis_reminders import REMINDER_TOOL_SCHEMA, ReminderController
+from jarvis_vision import VISION_TOOL_SCHEMA, VisionController
 
 # -----------------------------------------------------------------------------
 # LOGGING
@@ -502,8 +502,8 @@ class RouteResult:
     success: bool
     message: str
     latency_ms: float
-    match_latency_ms: Optional[float] = None
-    dispatch_latency_ms: Optional[float] = None
+    match_latency_ms: float | None = None
+    dispatch_latency_ms: float | None = None
 
     def format_for_terminal(self) -> str:
         """Human-readable one-block summary for the interactive test loop."""
@@ -832,10 +832,10 @@ class JarvisRouter:
 
     def __init__(
         self,
-        controller: Optional[SmartRoomController] = None,
-        pc_controller: Optional[PCController] = None,
-        vision_controller: Optional[VisionController] = None,
-        reminder_controller: Optional[ReminderController] = None,
+        controller: SmartRoomController | None = None,
+        pc_controller: PCController | None = None,
+        vision_controller: VisionController | None = None,
+        reminder_controller: ReminderController | None = None,
         lm_studio_base_url: str = LM_STUDIO_BASE_URL,
         lm_studio_model: str = LM_STUDIO_MODEL,
         lm_studio_timeout: float = LM_STUDIO_TIMEOUT_SECONDS,
@@ -908,8 +908,8 @@ class JarvisRouter:
         # comment above for why this exists and why it's bounded. A deque
         # with maxlen handles the bound for us: once full, appending drops
         # the oldest message automatically, no manual trimming needed.
-        self._conversation_history: "deque[dict]" = deque(maxlen=CONVERSATION_HISTORY_MAX_MESSAGES)
-        self._last_smart_path_time: Optional[float] = None
+        self._conversation_history: deque[dict] = deque(maxlen=CONVERSATION_HISTORY_MAX_MESSAGES)
+        self._last_smart_path_time: float | None = None
 
     # =====================================================================
     # PUBLIC ENTRY POINT
@@ -943,7 +943,7 @@ class JarvisRouter:
     # =====================================================================
     # FAST PATH
     # =====================================================================
-    def _try_fast_path(self, user_input: str) -> Optional[RouteResult]:
+    def _try_fast_path(self, user_input: str) -> RouteResult | None:
         """
         Walks the compiled INTENTS table in order and returns a RouteResult
         on the FIRST match. Returns None (not a RouteResult) if nothing
@@ -1092,7 +1092,7 @@ class JarvisRouter:
     # =====================================================================
     # SMART PATH — PREFLIGHT CHECK
     # =====================================================================
-    def _check_model_loaded(self) -> Optional[str]:
+    def _check_model_loaded(self) -> str | None:
         """
         Quick check against LM Studio's /v1/models before committing to a
         full chat completions call. That endpoint is metadata-only and
@@ -1433,7 +1433,7 @@ class JarvisRouter:
         # _looks_like_code_request. Cleared immediately below so it can
         # never apply twice, which is what keeps this bounded within
         # MAX_TOOL_CALL_ROUNDS rather than risking a retry loop.
-        force_tool_next_round: Optional[str] = None
+        force_tool_next_round: str | None = None
         already_retried_for_tool = False
 
         for _round in range(MAX_TOOL_CALL_ROUNDS):

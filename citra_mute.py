@@ -30,7 +30,6 @@ mute here carries an expiry; an indefinite one has to be asked for.
 import json
 import os
 import time
-from typing import Optional
 
 MUTE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "citra_muted.json")
 
@@ -42,7 +41,7 @@ _CACHE_SECONDS = 0.5
 _cache = {"checked_at": 0.0, "muted": False, "until": None}
 
 
-def mute(minutes: Optional[float] = 60.0, reason: str = "") -> dict:
+def mute(minutes: float | None = 60.0, reason: str = "") -> dict:
     """
     Go quiet. Returns the state written.
 

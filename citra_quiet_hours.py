@@ -26,8 +26,8 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, time as dtime
-from typing import Optional, Tuple
+from datetime import datetime
+from datetime import time as dtime
 
 logger = logging.getLogger("citra.quiet")
 
@@ -59,7 +59,7 @@ def _parse(value: str, fallback: dtime) -> dtime:
         return fallback
 
 
-def load_config() -> Tuple[dtime, dtime, bool]:
+def load_config() -> tuple[dtime, dtime, bool]:
     """(start, end, enabled). Falls back to the defaults on any problem."""
     start, end, enabled = DEFAULT_START, DEFAULT_END, True
     if not os.path.exists(CONFIG_PATH):
@@ -92,7 +92,7 @@ def save_config(quiet_from: str, quiet_until: str, enabled: bool = True) -> None
     os.replace(temp, CONFIG_PATH)
 
 
-def is_quiet(now: Optional[datetime] = None) -> bool:
+def is_quiet(now: datetime | None = None) -> bool:
     """Is `now` inside the quiet window?"""
     start, end, enabled = load_config()
     if not enabled:
@@ -110,7 +110,7 @@ def is_quiet(now: Optional[datetime] = None) -> bool:
     return moment >= start or moment < end
 
 
-def check(now: Optional[datetime] = None, allow_quiet: bool = False) -> Verdict:
+def check(now: datetime | None = None, allow_quiet: bool = False) -> Verdict:
     """
     May Citra place a call right now?
 

@@ -16,3 +16,19 @@ asyncio_mode = "auto"
 markers = [
     "hardware: needs a real NodeMCU on the LAN (never run in CI)",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["model_backups", "citra_ui", "citra_control_ui"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "UP"]
+ignore = [
+    "E501",   # tool descriptions the LLM reads are long single strings on purpose
+    "UP031",  # "%d of %d" is fine; not worth churning every log line to f-strings
+]
+
+[tool.ruff.lint.per-file-ignores]
+# HF_HUB_OFFLINE has to be decided BEFORE the heavy imports below it.
+"jarvis_voice_assistant.py" = ["E402"]

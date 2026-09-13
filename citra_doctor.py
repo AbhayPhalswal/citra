@@ -22,7 +22,6 @@ Exit code 0 if nothing is broken, 1 if anything is.
 import ast
 import concurrent.futures
 import glob
-import io
 import os
 import socket
 import subprocess
@@ -71,7 +70,7 @@ def check_syntax():
     files = sorted(glob.glob(os.path.join(ROOT, "*.py")))
     for path in files:
         try:
-            ast.parse(io.open(path, encoding="utf-8").read())
+            ast.parse(open(path, encoding="utf-8").read())
         except SyntaxError as exc:
             bad.append(f"{os.path.basename(path)}:{exc.lineno}")
     if bad:
@@ -121,7 +120,7 @@ def check_devices():
     section("Device config")
     sys.path.insert(0, ROOT)
     try:
-        from citra_devices import DeviceRegistry, DeviceConfigError
+        from citra_devices import DeviceRegistry
     except Exception as exc:
         line(BAD, "citra_devices", str(exc))
         return None
@@ -284,8 +283,8 @@ def check_scheduled_tasks():
     except Exception:
         line(INFO, "schtasks", "could not query")
         return
-    found = [l.split(":", 1)[1].strip() for l in out.splitlines()
-             if l.startswith("TaskName:") and "citra" in l.lower()]
+    found = [line.split(":", 1)[1].strip() for line in out.splitlines()
+             if line.startswith("TaskName:") and "citra" in line.lower()]
 
     # A scheduled CALL is a feature, not something that crept in. Warning
     # about it - and offering to delete it - is how a 6am wake-up call

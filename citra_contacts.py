@@ -27,7 +27,6 @@ import os
 import re
 import threading
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONTACTS_PATH = os.path.join(HERE, "citra_contacts.json")
@@ -120,10 +119,10 @@ class Contact:
     name: str
     number: str
     relation: str = ""          # "mother", "girlfriend" - for Citra's tone
-    aliases: List[str] = field(default_factory=list)
+    aliases: list[str] = field(default_factory=list)
     note: str = ""
 
-    def all_names(self) -> List[str]:
+    def all_names(self) -> list[str]:
         return [self.name] + list(self.aliases)
 
     def to_json(self) -> dict:
@@ -141,7 +140,7 @@ class Contact:
 class Match:
     ok: bool
     reason: str
-    contact: Optional[Contact] = None
+    contact: Contact | None = None
     confidence: float = 0.0
 
 
@@ -154,7 +153,7 @@ class ContactBook:
     def __init__(self, path: str = CONTACTS_PATH):
         self.path = path
         self._lock = threading.RLock()
-        self._contacts: Dict[str, Contact] = {}
+        self._contacts: dict[str, Contact] = {}
         self._loaded = False
 
     # -- storage --------------------------------------------------------
@@ -203,7 +202,7 @@ class ContactBook:
 
     # -- editing --------------------------------------------------------
     def add(self, name: str, number: str, relation: str = "",
-            aliases: Optional[List[str]] = None, note: str = "",
+            aliases: list[str] | None = None, note: str = "",
             overwrite: bool = False) -> Contact:
         self.load()
         name = (name or "").strip()
@@ -251,7 +250,7 @@ class ContactBook:
             self.save()
             return True
 
-    def all(self) -> List[Contact]:
+    def all(self) -> list[Contact]:
         self.load()
         with self._lock:
             return sorted(self._contacts.values(), key=lambda c: c.name.lower())
@@ -276,7 +275,7 @@ class ContactBook:
                          Contact(name=number, number=number), 1.0)
 
         with self._lock:
-            scored: List[Tuple[float, Contact]] = []
+            scored: list[tuple[float, Contact]] = []
             for contact in self._contacts.values():
                 best = max(_score(spoken, n) for n in contact.all_names())
                 scored.append((best, contact))
@@ -306,7 +305,7 @@ class ContactBook:
                      best_score)
 
 
-_BOOK: Optional[ContactBook] = None
+_BOOK: ContactBook | None = None
 
 
 def book() -> ContactBook:

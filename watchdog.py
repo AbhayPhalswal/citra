@@ -50,14 +50,12 @@ specific messages are simply not visible in that case, which was judged
 an acceptable loss: they're operational noise ("restarting in Ns"), not
 the application's actual output, which IS captured.
 """
+import logging
 import os
 import subprocess
 import sys
 import time
-import logging
-import shlex
 from collections import deque
-from typing import Optional
 
 logging.basicConfig(
     level=logging.INFO,
@@ -88,9 +86,9 @@ def _rotate_log_if_needed(path: str) -> None:
         os.replace(path, rotated)
 
 
-def run_supervised(command: str, log_file_path: Optional[str] = None) -> None:
+def run_supervised(command: str, log_file_path: str | None = None) -> None:
     backoff = MIN_BACKOFF_SECONDS
-    restart_times: "deque[float]" = deque()
+    restart_times: deque[float] = deque()
 
     logger.info("Starting supervised process: %s", command)
     if log_file_path:

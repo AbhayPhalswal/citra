@@ -67,7 +67,6 @@ import io
 import logging
 import subprocess
 from dataclasses import dataclass, field
-from typing import Optional
 
 import requests
 
@@ -108,7 +107,7 @@ class VisionActionResult:
     success: bool
     action: str
     message: str
-    data: Optional[dict] = field(default=None)
+    data: dict | None = field(default=None)
 
     def to_dict(self) -> dict:
         return {"success": self.success, "action": self.action, "message": self.message, "data": self.data}
@@ -138,7 +137,7 @@ def _screenshot_b64(max_width: int = VISION_MAX_WIDTH) -> str:
     img = ImageGrab.grab()
     if img.width > max_width:
         scale = max_width / img.width
-        resample = getattr(getattr(Image, "Resampling", Image), "LANCZOS")
+        resample = getattr(Image, "Resampling", Image).LANCZOS
         img = img.resize((max_width, int(img.height * scale)), resample=resample)
     buf = io.BytesIO()
     img.save(buf, format="PNG")

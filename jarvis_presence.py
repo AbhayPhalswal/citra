@@ -57,7 +57,7 @@ constructs a line: start() arms timers and returns immediately.
 
 import random
 import threading
-from typing import Callable, List, Optional, Sequence, Tuple
+from collections.abc import Callable, Sequence
 
 # =============================================================================
 # TIMING
@@ -94,7 +94,7 @@ LINE_DRAIN_TIMEOUT_SECONDS = 2.5
 #
 # Ordering matters: the first tuple whose keywords appear wins, so the more
 # specific topics are listed above the broader ones.
-_TOPIC_LINES: Sequence[Tuple[Tuple[str, ...], Tuple[str, ...]]] = (
+_TOPIC_LINES: Sequence[tuple[tuple[str, ...], tuple[str, ...]]] = (
     (
         ("weather", "rain", "raining", "umbrella", "forecast", "barish", "baarish", "garmi", "thand"),
         ("Let me check the weather, sir.",
@@ -161,7 +161,7 @@ _TOPIC_LINES: Sequence[Tuple[Tuple[str, ...], Tuple[str, ...]]] = (
 # preference for narrow-but-safe substrings over single common words —
 # "what are you doing" cannot false-positive inside a real command the
 # way a bare "are" or "you" would.
-_SMALL_TALK_PHRASES: Tuple[str, ...] = (
+_SMALL_TALK_PHRASES: tuple[str, ...] = (
     "what are you doing", "what are you up to",
     "how are you", "how's it going", "hows it going", "how are things",
     "who are you", "what are you",
@@ -174,7 +174,7 @@ _SMALL_TALK_PHRASES: Tuple[str, ...] = (
 # only that she is working, which is unambiguously true — she is, on the
 # calling thread, right now. Kept short on purpose: this line is competing
 # with the answer that is about to arrive behind it.
-_GENERIC_FIRST_LINES: Tuple[str, ...] = (
+_GENERIC_FIRST_LINES: tuple[str, ...] = (
     "One moment, sir.",
     "Let me work that out.",
     "Thinking about that, sir.",
@@ -186,14 +186,14 @@ _GENERIC_FIRST_LINES: Tuple[str, ...] = (
 # SECOND_LINE_DELAY_SECONDS, by which point the user has already heard a
 # first line and is waiting on a promise. These acknowledge the wait
 # without claiming progress that isn't measurable from here.
-_SECOND_LINES: Tuple[str, ...] = (
+_SECOND_LINES: tuple[str, ...] = (
     "Still working on it, sir.",
     "Bear with me, almost there.",
     "Nearly there, sir.",
 )
 
 
-def _pick(pool: Sequence[str], avoid: Optional[str]) -> str:
+def _pick(pool: Sequence[str], avoid: str | None) -> str:
     """
     Choose a line, never repeating the one just used.
 
@@ -208,7 +208,7 @@ def _pick(pool: Sequence[str], avoid: Optional[str]) -> str:
     return random.choice(candidates)
 
 
-def _lines_for(transcribed_text: str) -> Tuple[Sequence[str], Sequence[str]]:
+def _lines_for(transcribed_text: str) -> tuple[Sequence[str], Sequence[str]]:
     """
     Returns (first_line_pool, second_line_pool) for this request.
 
@@ -265,10 +265,10 @@ class ProgressNarrator:
         self._second_delay = second_delay_seconds
 
         self._lock = threading.Lock()
-        self._timers: List[threading.Timer] = []
+        self._timers: list[threading.Timer] = []
         self._done = True
-        self._in_flight: Optional[threading.Thread] = None
-        self._last_line: Optional[str] = None
+        self._in_flight: threading.Thread | None = None
+        self._last_line: str | None = None
         self._spoke_anything = False
 
     # -- public -----------------------------------------------------------

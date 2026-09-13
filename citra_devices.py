@@ -54,7 +54,6 @@ import difflib
 import json
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "citra_devices.json")
 
@@ -100,13 +99,13 @@ class DeviceRegistry:
     wall. Constructed once at startup and treated as immutable.
     """
 
-    def __init__(self, boards: Dict[str, dict], acs: Dict[str, dict]) -> None:
-        self._switches: List[Switch] = []
-        self._acs: List[AirConditioner] = []
-        self._board_hosts: Dict[str, str] = {}
-        self._board_rooms: Dict[str, str] = {}
+    def __init__(self, boards: dict[str, dict], acs: dict[str, dict]) -> None:
+        self._switches: list[Switch] = []
+        self._acs: list[AirConditioner] = []
+        self._board_hosts: dict[str, str] = {}
+        self._board_rooms: dict[str, str] = {}
 
-        seen_hosts: Dict[str, str] = {}
+        seen_hosts: dict[str, str] = {}
         for board, spec in boards.items():
             host = spec.get("host")
             if not host:
@@ -131,10 +130,10 @@ class DeviceRegistry:
             for raw_channel, name in (spec.get("switches") or {}).items():
                 try:
                     channel = int(raw_channel)
-                except (TypeError, ValueError):
+                except (TypeError, ValueError) as exc:
                     raise DeviceConfigError(
                         f"board {board!r} has a non-numeric channel key {raw_channel!r}"
-                    )
+                    ) from exc
                 if not (MIN_CHANNEL <= channel <= MAX_CHANNEL):
                     raise DeviceConfigError(
                         f"board {board!r} channel {channel} is outside {MIN_CHANNEL}-{MAX_CHANNEL}"
@@ -146,7 +145,7 @@ class DeviceRegistry:
         # Two switches in one room sharing a name ("bedroom 1 fan" on two
         # different boards) makes every spoken command ambiguous, and the
         # resolver would silently pick one. Catch it at load.
-        seen_labels: Dict[str, str] = {}
+        seen_labels: dict[str, str] = {}
         for switch in self._switches:
             key = switch.label.lower()
             if key in seen_labels:
@@ -179,11 +178,11 @@ class DeviceRegistry:
 
     # -- lookups ----------------------------------------------------------
     @property
-    def boards(self) -> List[str]:
+    def boards(self) -> list[str]:
         return list(self._board_hosts)
 
     @property
-    def rooms(self) -> List[str]:
+    def rooms(self) -> list[str]:
         seen = []
         for room in self._board_rooms.values():
             if room not in seen:
@@ -191,37 +190,37 @@ class DeviceRegistry:
         return seen
 
     @property
-    def switches(self) -> List[Switch]:
+    def switches(self) -> list[Switch]:
         return list(self._switches)
 
     @property
-    def air_conditioners(self) -> List[AirConditioner]:
+    def air_conditioners(self) -> list[AirConditioner]:
         return list(self._acs)
 
-    def host_for_board(self, board: str) -> Optional[str]:
+    def host_for_board(self, board: str) -> str | None:
         return self._board_hosts.get(board)
 
-    def boards_in(self, room: str) -> List[str]:
+    def boards_in(self, room: str) -> list[str]:
         return [b for b, r in self._board_rooms.items() if r == room]
 
-    def switches_in(self, room: str) -> List[Switch]:
+    def switches_in(self, room: str) -> list[Switch]:
         """
         Every switch in a room, across ALL its boards - what "turn off the
         hall" means when the hall has three separate switchboards.
         """
         return [s for s in self._switches if s.room == room]
 
-    def switches_on(self, board: str) -> List[Switch]:
+    def switches_on(self, board: str) -> list[Switch]:
         return [s for s in self._switches if s.board == board]
 
-    def ac_in(self, room: str) -> Optional[AirConditioner]:
+    def ac_in(self, room: str) -> AirConditioner | None:
         for ac in self._acs:
             if ac.room == room:
                 return ac
         return None
 
     # -- resolution -------------------------------------------------------
-    def find_switch(self, spoken: str) -> Optional[Switch]:
+    def find_switch(self, spoken: str) -> Switch | None:
         """
         Resolve free text like "bedroom 1 fan" or "kitchen light" to one
         switch, or None if nothing is close enough.
@@ -255,7 +254,7 @@ class DeviceRegistry:
                 best, best_score = switch, score
         return best if best_score >= NAME_MATCH_THRESHOLD else None
 
-    def find_room(self, spoken: str) -> Optional[str]:
+    def find_room(self, spoken: str) -> str | None:
         """Resolve free text to a room name, for whole-room commands."""
         text = " ".join(spoken.lower().split())
         if not text:

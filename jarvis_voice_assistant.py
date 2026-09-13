@@ -86,18 +86,17 @@ directory or importable on your PYTHONPATH.
 =============================================================================
 """
 
-import io
-import os
-import re
-import json
-import threading
-import time
-import wave
-import logging
-import queue
 import datetime
 import difflib
 import http.server
+import io
+import json
+import logging
+import os
+import queue
+import re
+import threading
+import time
 from collections import deque
 
 # -----------------------------------------------------------------------------
@@ -129,20 +128,19 @@ if os.environ.get("HF_HUB_OFFLINE") is None and os.path.isdir(_HF_CACHE_DIR):
     if any(name.startswith("models--") for name in os.listdir(_HF_CACHE_DIR)):
         os.environ["HF_HUB_OFFLINE"] = "1"
 
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Callable, List, Optional
 
 import numpy as np
 import requests
 
-from jarvis_hardware_api import SmartRoomController, HardwareResult
-from jarvis_router import JarvisRouter
-from jarvis_reminders import ReminderController
-from jarvis_presence import ProgressNarrator
 import citra_mute
 import citra_ui_bridge
-
+from jarvis_hardware_api import SmartRoomController
+from jarvis_presence import ProgressNarrator
+from jarvis_reminders import ReminderController
+from jarvis_router import JarvisRouter
 
 # -----------------------------------------------------------------------------
 # LOGGING
@@ -415,7 +413,7 @@ class _SpeechDetector:
             except Exception:
                 pass
 
-    def is_speech(self, raw_frame: bytes) -> Optional[bool]:
+    def is_speech(self, raw_frame: bytes) -> bool | None:
         if self._model is None:
             return None
         try:
@@ -727,7 +725,7 @@ CONTINUOUS_MODE_PREROLL_FRAMES = 3  # ~240ms of audio immediately BEFORE
                                     # be clipped every single time.
 
 
-def _extract_command_without_name(text: str) -> Optional[str]:
+def _extract_command_without_name(text: str) -> str | None:
     """
     If `text` mentions Citra's name (fuzzy-matched word-by-word — see
     CONTINUOUS_MODE_NAME_MATCH_THRESHOLD's comment for how that bar was
@@ -1308,6 +1306,7 @@ def _get_piper_voice():
             return _piper_voice
 
         import os
+
         from piper import PiperVoice
 
         # PiperVoice.load() looks for "<name>.onnx" plus a matching
@@ -1725,15 +1724,15 @@ class ProtocolIntent:
     the regex patterns in jarvis_router.py's INTENTS table.
     """
     name: str
-    example_phrases: List[str]
+    example_phrases: list[str]
     handler: Callable[[SmartRoomController, str], str]
 
 
 # -----------------------------------------------------------------------------
 # PROTOCOL HANDLERS — STATE-AWARE, SEMANTIC DIRECTION
 # -----------------------------------------------------------------------------
-# Direction (on vs off) is now determined by WHICH protocol matched, 
-# not by brittle keyword parsing. The handler just checks hardware state 
+# Direction (on vs off) is now determined by WHICH protocol matched,
+# not by brittle keyword parsing. The handler just checks hardware state
 # to generate the correct spoken response and avoid redundant commands.
 
 # -----------------------------------------------------------------------------
@@ -1828,7 +1827,7 @@ def _handle_lighting_on_protocol(controller: SmartRoomController, transcribed_te
 
     if not needs_on:
         response = ("All the lights are already on, sir." if is_whole_room
-                    else f"That light is already on, sir." if len(relay_numbers) == 1
+                    else "That light is already on, sir." if len(relay_numbers) == 1
                     else "Those lights are already on, sir.")
     else:
         if is_whole_room:
@@ -2104,7 +2103,7 @@ def _handle_weather_protocol(controller: SmartRoomController, transcribed_text: 
 # -----------------------------------------------------------------------------
 # THE REGISTRY ITSELF
 # -----------------------------------------------------------------------------
-PROTOCOL_REGISTRY: List[ProtocolIntent] = [
+PROTOCOL_REGISTRY: list[ProtocolIntent] = [
     ProtocolIntent(
         name="LIGHTING_ON_PROTOCOL",
         example_phrases=[
@@ -2315,7 +2314,7 @@ class SemanticRouter:
     particular utterance.
     """
 
-    def __init__(self, registry: List[ProtocolIntent], model_name: str = SEMANTIC_MODEL_NAME):
+    def __init__(self, registry: list[ProtocolIntent], model_name: str = SEMANTIC_MODEL_NAME):
         # Imported inside __init__, not at module level, so importing
         # jarvis_voice_assistant.py for its dataclasses/constants doesn't
         # require sentence-transformers (and the multi-GB PyTorch it pulls
@@ -2342,7 +2341,7 @@ class SemanticRouter:
             self._protocol_embeddings.append((idx, embeddings))
         logger.info("Semantic router ready with %d protocol(s).", len(registry))
 
-    def route(self, transcribed_text: str) -> Optional[ProtocolIntent]:
+    def route(self, transcribed_text: str) -> ProtocolIntent | None:
         """
         Returns the best-matching ProtocolIntent if its similarity clears
         the threshold, else None (signal to fall through to the Smart
@@ -2365,7 +2364,7 @@ class SemanticRouter:
         query_embedding = self.model.encode(transcribed_text, convert_to_tensor=True)
 
         best_score = -1.0
-        best_protocol_idx: Optional[int] = None
+        best_protocol_idx: int | None = None
 
         for protocol_idx, phrase_embeddings in self._protocol_embeddings:
             # cos_sim(query, all_phrases_for_this_protocol) -> a 1xN
@@ -2423,6 +2422,7 @@ def _create_openwakeword_model():
     from.
     """
     import os
+
     import openwakeword
     from openwakeword.model import Model
 
@@ -2513,7 +2513,7 @@ def _record_until_silence(pyaudio_instance, sample_rate: int) -> bytes:
         frames_per_buffer=CHUNK,
     )
 
-    frames: List[bytes] = []
+    frames: list[bytes] = []
     silence_chunks_needed = int(SILENCE_DURATION_SECONDS * sample_rate / CHUNK)
     silent_chunk_count = 0
     max_chunks = int(MAX_RECORDING_SECONDS * sample_rate / CHUNK)
@@ -2620,7 +2620,7 @@ class _AudioIngestHandler(http.server.BaseHTTPRequestHandler):
     constructs a fresh handler instance per request with no built-in way
     to pass extra constructor arguments through.
     """
-    assistant: "Optional[JarvisVoiceAssistant]" = None
+    assistant: "JarvisVoiceAssistant | None" = None
 
     def do_POST(self) -> None:
         if self.path != "/ingest":
@@ -2720,7 +2720,7 @@ class JarvisVoiceAssistant:
                                      # why there is exactly one, never two.
 
         # Stage 2: semantic router over the protocol registry.
-        self.semantic_router: Optional[SemanticRouter] = None  # built in run()
+        self.semantic_router: SemanticRouter | None = None  # built in run()
 
         # Gate for run()'s background model loading (see _load_heavy_models).
         # Created here, not only in run(), so a JarvisVoiceAssistant built
@@ -2783,7 +2783,7 @@ class JarvisVoiceAssistant:
 
         # Whose language, and when we worked it out. See
         # LANGUAGE_CACHE_SECONDS.
-        self._cached_language: Optional[str] = None
+        self._cached_language: str | None = None
         self._cached_language_at: float = 0.0
 
         # -------------------------------------------------------------
@@ -2808,7 +2808,7 @@ class JarvisVoiceAssistant:
         # entire lifetime, while the CONSUMER side (running on the main
         # thread) freely changes its own behavior between states without
         # ever touching the stream or reader thread itself.
-        self._frame_queue: "queue.Queue[bytes]" = queue.Queue()
+        self._frame_queue: queue.Queue[bytes] = queue.Queue()
 
         # Signals the reader thread to stop; checked in its loop and set
         # by run()'s shutdown path.
@@ -2817,7 +2817,7 @@ class JarvisVoiceAssistant:
         # Accumulates frames during LISTENING (recording a command) —
         # populated by the consumer loop, not the reader thread, keeping
         # with the single-writer-per-piece-of-state discipline.
-        self._recording_frames: List[bytes] = []
+        self._recording_frames: list[bytes] = []
         self._recording_silent_frame_count = 0
         self._recording_speech_started = False
 
@@ -2833,7 +2833,7 @@ class JarvisVoiceAssistant:
         # WAKE_MIN_SPEECH_RMS energy gate. A bounded deque keeps this at a
         # fixed size for free — no manual trimming, and no unbounded growth
         # over a process that stays idle for hours.
-        self._recent_idle_rms: "deque[float]" = deque(maxlen=WAKE_ENERGY_WINDOW_FRAMES)
+        self._recent_idle_rms: deque[float] = deque(maxlen=WAKE_ENERGY_WINDOW_FRAMES)
 
         # Timestamp (time.monotonic()) marking when COOLDOWN began, so
         # _consume_frame_cooldown knows when COOLDOWN_SECONDS has elapsed.
@@ -2861,7 +2861,7 @@ class JarvisVoiceAssistant:
         # Rolling pre-roll buffer — see CONTINUOUS_MODE_PREROLL_FRAMES's
         # comment for why. Only populated/consumed while continuous mode
         # is active.
-        self._continuous_preroll: "deque[bytes]" = deque(maxlen=CONTINUOUS_MODE_PREROLL_FRAMES)
+        self._continuous_preroll: deque[bytes] = deque(maxlen=CONTINUOUS_MODE_PREROLL_FRAMES)
 
     def _run_scheduled_command(self, command: str) -> None:
         """Runs a command whose scheduled time has arrived (see

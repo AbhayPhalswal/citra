@@ -57,7 +57,6 @@ import subprocess
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 logging.basicConfig(
     level=logging.INFO,
@@ -99,7 +98,7 @@ class PCActionResult:
     success: bool
     action: str
     message: str
-    data: Optional[dict] = field(default=None)
+    data: dict | None = field(default=None)
 
     def to_dict(self) -> dict:
         return {
@@ -384,10 +383,11 @@ _POLICY_CONFIG_IID = "{f8679f50-850a-41cf-9c72-430f290290c8}"
 
 
 def _make_policy_config_interface():
-    import comtypes
-    from comtypes import COMMETHOD, GUID, HRESULT
     from ctypes import POINTER, c_void_p, c_wchar_p
     from ctypes.wintypes import DWORD
+
+    import comtypes
+    from comtypes import COMMETHOD, GUID, HRESULT
 
     class IPolicyConfig(comtypes.IUnknown):
         _iid_ = GUID(_POLICY_CONFIG_IID)
@@ -601,7 +601,7 @@ def _focus_window(hwnd) -> None:
         time.sleep(0.3)
 
 
-def _uia_center(element) -> Optional[tuple]:
+def _uia_center(element) -> tuple | None:
     """Returns the (x, y) screen-pixel center of a UI Automation
     element's bounding rectangle, or None if it has no real on-screen
     presence (e.g. nothing is actually focused)."""
@@ -1034,8 +1034,8 @@ class PCController:
         a nav element instead of an actual result) and gives the page
         one more moment before giving up.
         """
-        import pyautogui
         import comtypes.client as cc
+        import pyautogui
 
         if device is None:
             other_devices = _list_active_playback_devices()
@@ -1329,7 +1329,7 @@ class PCController:
         if not domain:
             return PCActionResult(success=False, action="block_domain", message="No domain given.")
         try:
-            with open(HOSTS_FILE_PATH, "r", encoding="utf-8", errors="ignore") as f:
+            with open(HOSTS_FILE_PATH, encoding="utf-8", errors="ignore") as f:
                 lines = f.readlines()
             new_lines = _add_domain_block(lines, domain)
             with open(HOSTS_FILE_PATH, "w", encoding="utf-8") as f:
@@ -1352,7 +1352,7 @@ class PCController:
         if not domain:
             return PCActionResult(success=False, action="unblock_domain", message="No domain given.")
         try:
-            with open(HOSTS_FILE_PATH, "r", encoding="utf-8", errors="ignore") as f:
+            with open(HOSTS_FILE_PATH, encoding="utf-8", errors="ignore") as f:
                 lines = f.readlines()
             new_lines = _remove_domain_block(lines, domain)
             if len(new_lines) == len(lines):
