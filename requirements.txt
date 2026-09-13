@@ -1,17 +1,33 @@
+# Runtime dependencies, pinned to the versions this is actually run with.
+# Install with:  pip install -r requirements.txt
+# For the test suite and linting see requirements-dev.txt.
+# requirements.lock.txt is the full transitive freeze of a clean install.
+
 # Speech - all local
-openwakeword
-faster-whisper
-piper-tts
-sounddevice
-soundcard
-numpy
+openwakeword==0.6.0
+faster-whisper==1.2.1
+piper-tts==1.6.0
+silero-vad==6.2.1
+sentence-transformers==5.7.0
+torch==2.13.0
+sounddevice==0.5.5
+SoundCard==0.4.6
+PyAudio==0.2.14
+av==18.0.0
+numpy==2.5.1
 
 # Hardware + web
-requests
-aiohttp
+requests==2.34.2
+urllib3==2.7.0
+aiohttp==3.14.3
 
 # Windows automation
-pyautogui
-comtypes
-pycaw
-Pillow
+PyAutoGUI==0.9.54
+comtypes==1.4.16
+pycaw==20251023
+pywin32==312
+psutil==7.2.2
+Pillow==12.3.0
+
+# Only needed by generate_tls_cert.py (optional HTTPS for the dashboard)
+cryptography==50.0.0
