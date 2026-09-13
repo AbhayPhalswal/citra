@@ -45,7 +45,7 @@ openwakeword==0.6.0
 packaging==26.3
 pathvalidate==3.3.1
 pillow==12.3.0
-piper-tts==1.6.0
+piper-tts==1.8.0
 propcache==0.5.2
 protobuf==7.36.1
 psutil==7.2.2
