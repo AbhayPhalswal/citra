@@ -1,6 +1,9 @@
 # --- personal / secret: never commit these -----------------------------
-citra_contacts.json          # real phone numbers
-citra_api_token.txt          # dashboard API token
+# NOTE: a comment must be on its OWN line. git treats "file.txt  # note"
+# as a pattern that literally ends in "# note", which matches nothing -
+# that is exactly how these two were silently unignored once.
+citra_contacts.json
+citra_api_token.txt
 citra_cert.pem
 citra_key.pem
 citra_muted.json
