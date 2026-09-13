@@ -194,3 +194,34 @@ async def test_status_reads_both_boards_fast_fail(client, fake_controller):
 async def test_the_dashboard_is_served_with_no_store(client):
     response = await client.get("/")
     assert response.headers.get("Cache-Control") == "no-store, must-revalidate"
+
+
+# --------------------------------------------------------------------------
+# /health - for a watchdog or a Pi-side supervisor
+# --------------------------------------------------------------------------
+async def test_health_is_ungated_and_touches_no_hardware(client, fake_controller):
+    response = await client.get("/health")
+
+    assert response.status == 200
+    body = await response.json()
+    assert body["ok"] is True
+    assert body["service"] == "citra-ui-server"
+    assert body["version"] == citra_ui_server.SERVER_VERSION
+    assert body["uptime_s"] >= 0
+    assert body["muted"] is False
+    assert body["dashboards_connected"] == 0
+    assert body["boards_reachable"] is True
+    assert fake_controller.calls == []
+
+
+async def test_health_reflects_mute_and_the_board_circuit_breaker(client, monkeypatch):
+    citra_mute.mute(5)
+    citra_ui_server._note_board_sweep(reachable=False)
+    try:
+        body = await (await client.get("/health")).json()
+    finally:
+        citra_ui_server._note_board_sweep(reachable=True)
+        citra_mute.unmute()
+
+    assert body["muted"] is True
+    assert body["boards_reachable"] is False

@@ -61,6 +61,8 @@ logger = logging.getLogger("citra_ui_server")
 
 UI_SERVER_PORT = 8765
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "citra_ui")
+SERVER_VERSION = "0.1.0"
+_STARTED_AT = time.monotonic()
 TLS_CERT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "citra_cert.pem")
 TLS_KEY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "citra_key.pem")
 
@@ -915,6 +917,32 @@ async def api_mute_status(request: web.Request) -> web.Response:
                               "summary": citra_mute.describe()})
 
 
+async def health_handler(request: web.Request) -> web.Response:
+    """
+    GET /health - is this process alive and what does it currently know.
+
+    Deliberately touches NO hardware: a health probe that waited on an
+    ESP8266 would report the boards' health, not the server's, and would
+    take up to the full board timeout to answer while doing it. It
+    reports the last board sweep's verdict instead (the same circuit
+    breaker the dashboard polling uses), so a watchdog or a Pi-side
+    supervisor can poll it every few seconds without cost.
+
+    Ungated on purpose: it reveals nothing that isn't visible from the
+    dashboard's own state, and a liveness check that needs a token is
+    one that a supervisor script will get wrong at 3am.
+    """
+    return web.json_response({
+        "ok": True,
+        "service": "citra-ui-server",
+        "version": SERVER_VERSION,
+        "uptime_s": round(time.monotonic() - _STARTED_AT, 1),
+        "boards_reachable": not _boards_are_down(),
+        "muted": citra_mute.is_muted(),
+        "dashboards_connected": len(connected_clients),
+    })
+
+
 async def api_status(request: web.Request) -> web.Response:
     # Sequential and on the phone controller, unlike the dashboard's own
     # poll: this is answering a phone that is waiting, so it must fail
@@ -1133,6 +1161,7 @@ def create_app() -> web.Application:
 
     app.on_startup.append(prewarm_text_router)
 
+    app.router.add_get("/health", health_handler)
     app.router.add_get("/calls", calls_page_handler)
     app.router.add_get("/", index_handler)
     app.router.add_get("/ws", websocket_handler)
