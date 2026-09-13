@@ -58,10 +58,9 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
+import citra_logging
+
+citra_logging.configure()
 logger = logging.getLogger("jarvis_pc_control")
 
 # Marks THIS process as per-monitor-DPI-aware, once, at import time.

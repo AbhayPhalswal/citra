@@ -52,10 +52,11 @@ import time
 import aiohttp
 from aiohttp import WSMsgType, web
 
+import citra_logging
 import citra_mute
 from jarvis_hardware_api import SmartRoomController
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+citra_logging.configure()
 logger = logging.getLogger("citra_ui_server")
 
 UI_SERVER_PORT = 8765

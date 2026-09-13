@@ -57,11 +57,10 @@ import sys
 import time
 from collections import deque
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [WATCHDOG] %(message)s",
-)
-logger = logging.getLogger(__name__)
+import citra_logging
+
+citra_logging.configure()
+logger = logging.getLogger("watchdog")
 
 MIN_BACKOFF_SECONDS = 2.0
 MAX_BACKOFF_SECONDS = 60.0

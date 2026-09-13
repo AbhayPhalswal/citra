@@ -70,7 +70,9 @@ from dataclasses import dataclass, field
 
 import requests
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+import citra_logging
+
+citra_logging.configure()
 logger = logging.getLogger("jarvis_vision")
 
 LMS_CLI_PATH = r"C:\Users\HP\.lmstudio\bin\lms.exe"

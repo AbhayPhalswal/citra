@@ -63,6 +63,7 @@ from re import Pattern
 
 import requests
 
+import citra_logging
 from citra_contacts import CONTACT_TOOL_SCHEMA, ContactController
 from citra_models import CODE_TOOL_SCHEMA, CodeController
 from jarvis_hardware_api import JARVIS_TOOL_SCHEMA, HardwareResult, SmartRoomController
@@ -73,10 +74,7 @@ from jarvis_vision import VISION_TOOL_SCHEMA, VisionController
 # -----------------------------------------------------------------------------
 # LOGGING
 # -----------------------------------------------------------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
+citra_logging.configure()
 logger = logging.getLogger("jarvis_router")
 
 

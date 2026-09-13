@@ -99,6 +99,8 @@ import threading
 import time
 from collections import deque
 
+import citra_logging
+
 # -----------------------------------------------------------------------------
 # HUGGING FACE OFFLINE MODE — set BEFORE any HF-backed library is imported
 # -----------------------------------------------------------------------------
@@ -145,10 +147,7 @@ from jarvis_router import JarvisRouter
 # -----------------------------------------------------------------------------
 # LOGGING
 # -----------------------------------------------------------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
+citra_logging.configure()
 logger = logging.getLogger("jarvis_voice")
 
 

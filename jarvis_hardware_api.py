@@ -42,6 +42,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry  # type: ignore
 
+import citra_logging
+
 # -----------------------------------------------------------------------------
 # LOGGING
 # -----------------------------------------------------------------------------
@@ -50,10 +52,7 @@ from urllib3.util.retry import Retry  # type: ignore
 # worked. This logger gives you a persistent trail of what was sent, what
 # came back, and what failed, which matters a lot when debugging "why didn't
 # my lamp turn on" three rooms away from the laptop.
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
+citra_logging.configure()
 logger = logging.getLogger("jarvis_hardware")
 
 

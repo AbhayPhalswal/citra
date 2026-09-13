@@ -44,7 +44,9 @@ import webbrowser
 import psutil
 from aiohttp import web
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+import citra_logging
+
+citra_logging.configure()
 logger = logging.getLogger("citra_control_panel")
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))

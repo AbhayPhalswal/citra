@@ -46,7 +46,9 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+import citra_logging
+
+citra_logging.configure()
 logger = logging.getLogger("jarvis_reminders")
 
 
