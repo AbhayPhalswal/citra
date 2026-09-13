@@ -8,7 +8,7 @@ openwakeword==0.6.0
 faster-whisper==1.2.1
 piper-tts==1.6.0
 silero-vad==6.2.1
-sentence-transformers==5.7.0
+sentence-transformers==6.0.1
 torch==2.13.0
 sounddevice==0.5.5
 SoundCard==0.4.6
